@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "EstimatedDevTokenAccountingV1": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "const": "ESTIMATED_DEV",
+          "title": "Mode",
+          "type": "string"
+        },
+        "estimated": {
+          "const": true,
+          "title": "Estimated",
+          "type": "boolean"
+        },
+        "estimated_input_tokens": {
+          "minimum": 0,
+          "title": "Estimated Input Tokens",
+          "type": "integer"
+        },
+        "estimator_revision": {
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Estimator Revision",
+          "type": "string"
+        },
+        "serialized_request_bytes": {
+          "minimum": 0,
+          "title": "Serialized Request Bytes",
+          "type": "integer"
+        },
+        "protocol_overhead_tokens": {
+          "minimum": 0,
+          "title": "Protocol Overhead Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mode",
+        "estimated",
+        "estimated_input_tokens",
+        "estimator_revision",
+        "serialized_request_bytes",
+        "protocol_overhead_tokens"
+      ],
+      "title": "EstimatedDevTokenAccountingV1",
+      "type": "object"
+    },
+    "ExactTokenAccountingV1": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "const": "EXACT",
+          "title": "Mode",
+          "type": "string"
+        },
+        "estimated": {
+          "const": false,
+          "title": "Estimated",
+          "type": "boolean"
+        },
+        "exact_input_tokens": {
+          "minimum": 0,
+          "title": "Exact Input Tokens",
+          "type": "integer"
+        },
+        "tokenizer_revision": {
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Tokenizer Revision",
+          "type": "string"
+        },
+        "chat_template_hash": {
+          "maxLength": 64,
+          "minLength": 64,
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Chat Template Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "estimated",
+        "exact_input_tokens",
+        "tokenizer_revision",
+        "chat_template_hash"
+      ],
+      "title": "ExactTokenAccountingV1",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "ESTIMATED_DEV": "#/$defs/EstimatedDevTokenAccountingV1",
+      "EXACT": "#/$defs/ExactTokenAccountingV1"
+    },
+    "propertyName": "mode"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ExactTokenAccountingV1"
+    },
+    {
+      "$ref": "#/$defs/EstimatedDevTokenAccountingV1"
+    }
+  ]
+}

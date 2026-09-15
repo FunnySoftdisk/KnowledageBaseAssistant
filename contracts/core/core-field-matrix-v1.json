@@ -1,0 +1,142 @@
+{
+  "contract_version": "core_field_matrix_v1",
+  "decision_ref": "CORE-01..CORE-40",
+  "decision_status": "ACCEPTED",
+  "implementation_stage": "DTO_SCHEMA_AND_PURE_SEMANTIC_PARTIAL",
+  "orm_mapping_status": "NOT_RUN",
+  "migration_pg_status": "NOT_RUN",
+  "blocked_by": [
+    "SQLALCHEMY_ALEMBIC_PSYCOPG_EXACT_VERSIONS_NOT_APPROVED",
+    "COMPILED_CRITERION_UUID_NAMESPACE_NOT_APPROVED",
+    "OUTPUT_CONTRACT_RESOLVER_RULE_TABLE_NOT_APPROVED",
+    "DEPENDENCY_TABLE_FIELD_CONTRACTS_NOT_CLOSED"
+  ],
+  "column_rules": {
+    "workflow.intelligent_task": {
+      "required": ["query_artifact_id", "current_input_id"],
+      "forbidden": [
+        "knowledge_scope",
+        "output_contract",
+        "network_policy",
+        "immutable_constraints"
+      ],
+      "public_initial_status": "QUEUED"
+    },
+    "workflow.task_goal_understanding": {
+      "required": [
+        "goal_context_artifact_id",
+        "context_digest",
+        "understanding_digest",
+        "gate_artifact_id",
+        "gate_digest"
+      ],
+      "forbidden": ["primary_goal_summary", "expected_deliverable_summary"]
+    }
+  },
+  "closed_table_projections": {
+    "iam.organization": [
+      "id",
+      "name",
+      "status",
+      "version",
+      "created_at",
+      "updated_at"
+    ],
+    "workflow.task_input_snapshot": [
+      "input_id",
+      "task_id",
+      "input_revision",
+      "message_id",
+      "message_artifact_id",
+      "actor_id",
+      "organization_id",
+      "conversation_id",
+      "attachment_binding_refs_json",
+      "knowledge_scope_json",
+      "network_policy",
+      "network_policy_source",
+      "output_contract_json",
+      "selected_resource_refs_json",
+      "task_constraint_refs_json",
+      "policy_snapshot_ref_json",
+      "locale",
+      "timezone",
+      "contract_version",
+      "snapshot_digest",
+      "created_at"
+    ],
+    "workflow.task_plan_item_definition": [
+      "task_id",
+      "plan_version",
+      "plan_item_id",
+      "source_local_id",
+      "objective",
+      "executor_requirement",
+      "capability_requirements_json",
+      "candidate_capability_refs_json",
+      "input_artifact_refs_json",
+      "output_schema_ref_json",
+      "depends_on_item_ids_json",
+      "iteration_policy_json",
+      "initial_state",
+      "definition_digest",
+      "created_at"
+    ],
+    "workflow.task_plan_hypothesis": [
+      "task_id",
+      "plan_version",
+      "hypothesis_id",
+      "source_local_id",
+      "statement",
+      "initial_status",
+      "hypothesis_digest",
+      "created_at"
+    ],
+    "workflow.task_compiled_criterion": [
+      "task_id",
+      "plan_version",
+      "criterion_id",
+      "statement",
+      "source_kind",
+      "source_refs",
+      "requirement_level",
+      "completion_role",
+      "protected",
+      "evaluation_mode",
+      "predicate",
+      "applicability",
+      "evaluator_profile",
+      "digest",
+      "created_at"
+    ],
+    "workflow.plan_item_runtime": [
+      "task_id",
+      "plan_version",
+      "plan_item_id",
+      "status",
+      "current_iteration",
+      "active_task_attempt_id",
+      "last_error_code",
+      "row_version",
+      "started_at",
+      "completed_at",
+      "updated_at"
+    ]
+  },
+  "dependency_tables_requiring_full_field_closure": [
+    "content.artifact",
+    "policy.policy_snapshot",
+    "workflow.task_attempt",
+    "workflow.task_event",
+    "integration.outbox_message",
+    "integration.idempotency_record",
+    "workflow.conversation_message",
+    "workflow.intelligent_task",
+    "workflow.task_attachment_binding",
+    "workflow.task_explicit_constraint",
+    "workflow.task_intent_parse",
+    "workflow.fixed_workflow_admission",
+    "workflow.user_input_request",
+    "workflow.task_plan_version"
+  ]
+}

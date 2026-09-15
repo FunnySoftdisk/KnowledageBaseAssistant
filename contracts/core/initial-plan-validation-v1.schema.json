@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "InitialPlanValidationReasonV1": {
+      "enum": [
+        "SCHEMA_INVALID",
+        "REFERENCE_STALE",
+        "DUPLICATE_LOCAL_ID",
+        "DEPENDENCY_MISSING",
+        "DEPENDENCY_CYCLE",
+        "INITIAL_READY_INVALID",
+        "CRITERION_COVERAGE_MISSING",
+        "CAPABILITY_REQUIREMENT_UNRESOLVED",
+        "CONSTRAINT_CONFLICT",
+        "BUDGET_INSUFFICIENT",
+        "DEADLINE_EXCEEDED",
+        "GOAL_BLOCKING_ISSUE",
+        "FORBIDDEN_AUTHORITY_FIELD",
+        "SIZE_LIMIT_EXCEEDED"
+      ],
+      "title": "InitialPlanValidationReasonV1",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "outcome": {
+      "enum": [
+        "ACCEPT",
+        "REPAIRABLE_INVALID",
+        "GOAL_RECHECK_REQUIRED",
+        "UNEXECUTABLE"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "reason_codes": {
+      "items": {
+        "$ref": "#/$defs/InitialPlanValidationReasonV1"
+      },
+      "title": "Reason Codes",
+      "type": "array"
+    },
+    "field_paths": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Field Paths",
+      "type": "array"
+    },
+    "compiled_plan_digest": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "minLength": 64,
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Compiled Plan Digest"
+    }
+  },
+  "required": [
+    "outcome",
+    "reason_codes",
+    "field_paths",
+    "compiled_plan_digest"
+  ],
+  "title": "InitialPlanValidationV1",
+  "type": "object"
+}

@@ -1,0 +1,454 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "ArtifactRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "format": "uuid",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "artifact_type": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Artifact Type",
+          "type": "string"
+        },
+        "sha256": {
+          "maxLength": 64,
+          "minLength": 64,
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "schema_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Schema Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "artifact_type",
+        "sha256",
+        "schema_id",
+        "schema_version"
+      ],
+      "title": "ArtifactRefV1",
+      "type": "object"
+    },
+    "ConstraintRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "constraint_id": {
+          "format": "uuid",
+          "title": "Constraint Id",
+          "type": "string"
+        },
+        "input_id": {
+          "format": "uuid",
+          "title": "Input Id",
+          "type": "string"
+        },
+        "parser_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Parser Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "constraint_id",
+        "input_id",
+        "parser_version"
+      ],
+      "title": "ConstraintRefV1",
+      "type": "object"
+    },
+    "KnowledgeScopeModeV1": {
+      "enum": [
+        "NONE",
+        "DEFAULT_AUTHORIZED",
+        "EXPLICIT"
+      ],
+      "title": "KnowledgeScopeModeV1",
+      "type": "string"
+    },
+    "KnowledgeScopeV1": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "$ref": "#/$defs/KnowledgeScopeModeV1"
+        },
+        "directory_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Directory Ids",
+          "type": "array"
+        },
+        "knowledge_version_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Knowledge Version Ids",
+          "type": "array"
+        },
+        "include_personal": {
+          "title": "Include Personal",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "mode",
+        "directory_ids",
+        "knowledge_version_ids",
+        "include_personal"
+      ],
+      "title": "KnowledgeScopeV1",
+      "type": "object"
+    },
+    "NetworkControlV1": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "enum": [
+            "DENY",
+            "ASK",
+            "ALLOW"
+          ],
+          "title": "Value",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/NetworkPolicySourceV1"
+        }
+      },
+      "required": [
+        "value",
+        "source"
+      ],
+      "title": "NetworkControlV1",
+      "type": "object"
+    },
+    "NetworkPolicySourceV1": {
+      "enum": [
+        "UI_FIELD",
+        "QUERY_SPAN",
+        "SYSTEM_DEFAULT"
+      ],
+      "title": "NetworkPolicySourceV1",
+      "type": "string"
+    },
+    "OutputContractV1": {
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "MARKDOWN",
+            "JSON"
+          ],
+          "title": "Format",
+          "type": "string"
+        },
+        "delivery": {
+          "enum": [
+            "INLINE",
+            "ARTIFACT"
+          ],
+          "title": "Delivery",
+          "type": "string"
+        },
+        "language": {
+          "maxLength": 35,
+          "minLength": 1,
+          "title": "Language",
+          "type": "string"
+        },
+        "schema_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SchemaRefV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "template_or_skill_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResourceRefV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "citations": {
+          "enum": [
+            "REQUIRED",
+            "OPTIONAL",
+            "FORBIDDEN"
+          ],
+          "title": "Citations",
+          "type": "string"
+        },
+        "max_output_bytes": {
+          "maximum": 1048576,
+          "minimum": 1,
+          "title": "Max Output Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "format",
+        "delivery",
+        "language",
+        "schema_ref",
+        "template_or_skill_ref",
+        "citations",
+        "max_output_bytes"
+      ],
+      "title": "OutputContractV1",
+      "type": "object"
+    },
+    "PolicySnapshotRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "policy_snapshot_id": {
+          "format": "uuid",
+          "title": "Policy Snapshot Id",
+          "type": "string"
+        },
+        "policy_revision": {
+          "minimum": 1,
+          "title": "Policy Revision",
+          "type": "integer"
+        },
+        "policy_digest": {
+          "maxLength": 64,
+          "minLength": 64,
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Policy Digest",
+          "type": "string"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "policy_snapshot_id",
+        "policy_revision",
+        "policy_digest",
+        "observed_at"
+      ],
+      "title": "PolicySnapshotRefV1",
+      "type": "object"
+    },
+    "ResourceDomainV1": {
+      "enum": [
+        "TASK_ATTACHMENT",
+        "TEAM_KNOWLEDGE",
+        "PERSONAL_KNOWLEDGE",
+        "TASK_RESULT"
+      ],
+      "title": "ResourceDomainV1",
+      "type": "string"
+    },
+    "ResourceRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "source_domain": {
+          "$ref": "#/$defs/ResourceDomainV1"
+        },
+        "resource_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "version_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Version Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_domain",
+        "resource_id",
+        "version_id"
+      ],
+      "title": "ResourceRefV1",
+      "type": "object"
+    },
+    "SchemaRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Schema Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "schema_digest": {
+          "maxLength": 64,
+          "minLength": 64,
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Schema Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_id",
+        "schema_version",
+        "schema_digest"
+      ],
+      "title": "SchemaRefV1",
+      "type": "object"
+    },
+    "StructuredTaskControlsV1": {
+      "additionalProperties": false,
+      "properties": {
+        "knowledge_scope": {
+          "$ref": "#/$defs/KnowledgeScopeV1"
+        },
+        "network_policy": {
+          "$ref": "#/$defs/NetworkControlV1"
+        },
+        "output_contract": {
+          "$ref": "#/$defs/OutputContractV1"
+        },
+        "selected_resource_refs": {
+          "items": {
+            "$ref": "#/$defs/ResourceRefV1"
+          },
+          "maxItems": 20,
+          "title": "Selected Resource Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "knowledge_scope",
+        "network_policy",
+        "output_contract",
+        "selected_resource_refs"
+      ],
+      "title": "StructuredTaskControlsV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": {
+      "const": "goal_understanding_context_v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "task_id": {
+      "format": "uuid",
+      "title": "Task Id",
+      "type": "string"
+    },
+    "input_id": {
+      "format": "uuid",
+      "title": "Input Id",
+      "type": "string"
+    },
+    "input_snapshot_digest": {
+      "maxLength": 64,
+      "minLength": 64,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Input Snapshot Digest",
+      "type": "string"
+    },
+    "query_ref": {
+      "$ref": "#/$defs/ArtifactRefV1"
+    },
+    "structured_controls": {
+      "$ref": "#/$defs/StructuredTaskControlsV1"
+    },
+    "effective_constraint_refs": {
+      "items": {
+        "$ref": "#/$defs/ConstraintRefV1"
+      },
+      "maxItems": 64,
+      "title": "Effective Constraint Refs",
+      "type": "array"
+    },
+    "authorized_resource_refs": {
+      "items": {
+        "$ref": "#/$defs/ResourceRefV1"
+      },
+      "maxItems": 20,
+      "title": "Authorized Resource Refs",
+      "type": "array"
+    },
+    "classifier_annotation_ref": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ArtifactRefV1"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "policy_snapshot_ref": {
+      "$ref": "#/$defs/PolicySnapshotRefV1"
+    },
+    "deadline_at": {
+      "format": "date-time",
+      "title": "Deadline At",
+      "type": "string"
+    },
+    "prompt_profile": {
+      "const": "supervisor-goal-understanding-v1",
+      "title": "Prompt Profile",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "supervisor_goal_understanding_v1",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "contract_version",
+    "task_id",
+    "input_id",
+    "input_snapshot_digest",
+    "query_ref",
+    "structured_controls",
+    "effective_constraint_refs",
+    "authorized_resource_refs",
+    "classifier_annotation_ref",
+    "policy_snapshot_ref",
+    "deadline_at",
+    "prompt_profile",
+    "schema_version"
+  ],
+  "title": "GoalUnderstandingContextV1",
+  "type": "object"
+}

@@ -1,0 +1,58 @@
+# Credentials and local configuration: examples must contain placeholders only.
+.env
+.env.*
+!.env.example
+.secrets/
+secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Python environments, caches and generated distributions.
+.venv/
+.venv-*/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# JavaScript dependencies and generated output; lockfiles remain tracked.
+node_modules/
+dist/
+build/
+out/
+coverage/
+.pnpm-store/
+*.tsbuildinfo
+
+# Runtime data and downloaded model weights are not source artifacts.
+.data/
+.models/
+.artifacts/
+.logs/
+.cache/
+/var/
+*.log
+*.sqlite
+*.sqlite3
+*.db
+*.safetensors
+*.gguf
+*.onnx
+*.pt
+*.pth
+
+# Machine-specific files.
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

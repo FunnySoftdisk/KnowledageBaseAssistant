@@ -1,0 +1,124 @@
+{
+  "scope": "M1_APPROVED_CORE_INPUT_GOAL_PLAN",
+  "initial_plan_draft_contract_built": true,
+  "pure_semantic_checks_built": true,
+  "compiled_criterion_contract_built": false,
+  "orm_mapping_built": false,
+  "migration_pg_pass": false,
+  "full_initial_plan_contract_built": false,
+  "release_eligible": false,
+  "signature_verified": false,
+  "runtime_ready": false,
+  "artifacts": [
+    {
+      "file": "artifact-ref-v1.schema.json",
+      "size_bytes": 923,
+      "sha256": "bcdb3d87a6d9a794df7e3cd344aaa2a9000bdf128aa596f597c147216df3585a"
+    },
+    {
+      "file": "capability-planning-view-v1.schema.json",
+      "size_bytes": 3091,
+      "sha256": "9837e026f10f0c441db3985dd614c8d5b97cb8aefff7f15de8dd5eca6e8320c2"
+    },
+    {
+      "file": "capability-ref-v1.schema.json",
+      "size_bytes": 703,
+      "sha256": "8984e4b5fa2631d21f8b550760ff56671e06744c5d7bd057c7cadd7fc0687284"
+    },
+    {
+      "file": "capability-requirement-v1.schema.json",
+      "size_bytes": 734,
+      "sha256": "da14474e66bd35cbb9052fd30ae6b6aae771ffe8d356a18909fd95b0c11eea14"
+    },
+    {
+      "file": "constraint-ref-v1.schema.json",
+      "size_bytes": 588,
+      "sha256": "102277a8e68b9756b7ca3f4aa58af3d17019bb2f0af2ee46555b4318b0c958df"
+    },
+    {
+      "file": "create-task-request-v1.schema.json",
+      "size_bytes": 6782,
+      "sha256": "87a72fa417d52746f2a2ebbad560620876da5ec40132bb6919b83ea29511af53"
+    },
+    {
+      "file": "criterion-draft-v1.schema.json",
+      "size_bytes": 4671,
+      "sha256": "d5ebef85a8e6cc062936d8e97504f144ab5013118786cf5e63b0c56b3a25c44c"
+    },
+    {
+      "file": "criterion-target-v1.schema.json",
+      "size_bytes": 3837,
+      "sha256": "b3cf9a7edd0702bb422498e233ddf9da3b609edff52b1cb6b15f4cc5e7a7342d"
+    },
+    {
+      "file": "goal-gate-decision-v1.schema.json",
+      "size_bytes": 1909,
+      "sha256": "850dcb971d0edd6f524729c3d6ea609d3260ab971b8deb7ebe9ad90d0b651683"
+    },
+    {
+      "file": "goal-understanding-context-v1.schema.json",
+      "size_bytes": 10610,
+      "sha256": "4114a630ea193d6d4712a45a556a69e8274233d4f325598dd4948194742a9dce"
+    },
+    {
+      "file": "goal-understanding-v1.schema.json",
+      "size_bytes": 7385,
+      "sha256": "24a4b4579d3fda30c941132129da3ed1f4cc57fffe0757d2f06f06feb4c70b1e"
+    },
+    {
+      "file": "hypothesis-draft-v1.schema.json",
+      "size_bytes": 466,
+      "sha256": "08a4eae8937f8f333ea323f4ee165c6ec4b964b0cc0b73c470de4f03885a8232"
+    },
+    {
+      "file": "initial-plan-draft-v1.schema.json",
+      "size_bytes": 11479,
+      "sha256": "b7c724a946485fb87e6d64a6bebb8b93a3a102addbc97862da9a47e4bc9390cf"
+    },
+    {
+      "file": "initial-plan-validation-v1.schema.json",
+      "size_bytes": 1668,
+      "sha256": "cc82882efb0978f7b4c0f80531b85b549444293a270a3fee98435d71909b2db7"
+    },
+    {
+      "file": "initial-planning-context-v1.schema.json",
+      "size_bytes": 5404,
+      "sha256": "782c0aacc024885900ac8d11068f4173c68971c148ba8b8eaaa955e725f18294"
+    },
+    {
+      "file": "iteration-policy-v1.schema.json",
+      "size_bytes": 732,
+      "sha256": "86eb4ed18a0754dc89a28b8219e5122b825e219289f2247376aa4b818e77f920"
+    },
+    {
+      "file": "policy-snapshot-ref-v1.schema.json",
+      "size_bytes": 787,
+      "sha256": "0f9401e8184eb48cc2b52c0f3679e6d7210cbbd6d298463ae4039f1441761f52"
+    },
+    {
+      "file": "resource-ref-v1.schema.json",
+      "size_bytes": 806,
+      "sha256": "20d4df44dc8fcf9e78d2886954e9684a7fb198ae54ed32a24684cc83173c5550"
+    },
+    {
+      "file": "schema-ref-v1.schema.json",
+      "size_bytes": 666,
+      "sha256": "5e218aa438207abda60cdf3aa9e54ed8b4f8534ca44e9001d4e940f0f935abe6"
+    },
+    {
+      "file": "task-attachment-binding-ref-v1.schema.json",
+      "size_bytes": 1723,
+      "sha256": "d283904cbf369e4cff0507a47fec97902cee171de5befc4bc05b88bbee946632"
+    },
+    {
+      "file": "task-input-snapshot-v1.schema.json",
+      "size_bytes": 11797,
+      "sha256": "b98e5bfb6a3e58646662781631185405594f419ef4fa08eb9f637369b74572f6"
+    },
+    {
+      "file": "token-accounting-v1.schema.json",
+      "size_bytes": 2709,
+      "sha256": "6acbf713a6ed4ff9791df580963263018b74234b0a88cfe0d20ffbe140745971"
+    }
+  ]
+}

@@ -1,0 +1,313 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "ConstraintRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "constraint_id": {
+          "format": "uuid",
+          "title": "Constraint Id",
+          "type": "string"
+        },
+        "input_id": {
+          "format": "uuid",
+          "title": "Input Id",
+          "type": "string"
+        },
+        "parser_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Parser Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "constraint_id",
+        "input_id",
+        "parser_version"
+      ],
+      "title": "ConstraintRefV1",
+      "type": "object"
+    },
+    "GoalBlockingIssueV1": {
+      "additionalProperties": false,
+      "properties": {
+        "local_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Local Id",
+          "type": "string"
+        },
+        "reason": {
+          "$ref": "#/$defs/GoalBlockingReasonV1"
+        },
+        "field_path": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "^/",
+          "title": "Field Path",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "proposed_question_kind": {
+          "enum": [
+            "SINGLE_CHOICE",
+            "MULTI_CHOICE",
+            "SHORT_TEXT",
+            "RESOURCE_SELECTION"
+          ],
+          "title": "Proposed Question Kind",
+          "type": "string"
+        },
+        "candidate_resource_refs": {
+          "items": {
+            "$ref": "#/$defs/ResourceRefV1"
+          },
+          "maxItems": 20,
+          "title": "Candidate Resource Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "local_id",
+        "reason",
+        "field_path",
+        "description",
+        "proposed_question_kind",
+        "candidate_resource_refs"
+      ],
+      "title": "GoalBlockingIssueV1",
+      "type": "object"
+    },
+    "GoalBlockingReasonV1": {
+      "enum": [
+        "GOAL_AMBIGUOUS",
+        "RESOURCE_SELECTION_REQUIRED",
+        "REQUIRED_PARAMETER_MISSING",
+        "CONSTRAINT_CONFLICT",
+        "OUTPUT_CHOICE_MATERIAL"
+      ],
+      "title": "GoalBlockingReasonV1",
+      "type": "string"
+    },
+    "GoalCriterionProposalV1": {
+      "additionalProperties": false,
+      "properties": {
+        "local_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Local Id",
+          "type": "string"
+        },
+        "statement": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        },
+        "evidence_kind": {
+          "enum": [
+            "ARTIFACT",
+            "CITATION",
+            "STATE",
+            "USER"
+          ],
+          "title": "Evidence Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "local_id",
+        "statement",
+        "evidence_kind"
+      ],
+      "title": "GoalCriterionProposalV1",
+      "type": "object"
+    },
+    "ResourceDomainV1": {
+      "enum": [
+        "TASK_ATTACHMENT",
+        "TEAM_KNOWLEDGE",
+        "PERSONAL_KNOWLEDGE",
+        "TASK_RESULT"
+      ],
+      "title": "ResourceDomainV1",
+      "type": "string"
+    },
+    "ResourceRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "source_domain": {
+          "$ref": "#/$defs/ResourceDomainV1"
+        },
+        "resource_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "version_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Version Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_domain",
+        "resource_id",
+        "version_id"
+      ],
+      "title": "ResourceRefV1",
+      "type": "object"
+    },
+    "SafeAssumptionReasonV1": {
+      "enum": [
+        "REVERSIBLE_DEFAULT",
+        "NO_SCOPE_EXPANSION",
+        "NO_MATERIAL_DELIVERABLE_CHANGE"
+      ],
+      "title": "SafeAssumptionReasonV1",
+      "type": "string"
+    },
+    "SafeAssumptionV1": {
+      "additionalProperties": false,
+      "properties": {
+        "local_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Local Id",
+          "type": "string"
+        },
+        "statement": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        },
+        "reason": {
+          "$ref": "#/$defs/SafeAssumptionReasonV1"
+        }
+      },
+      "required": [
+        "local_id",
+        "statement",
+        "reason"
+      ],
+      "title": "SafeAssumptionV1",
+      "type": "object"
+    },
+    "SubgoalV1": {
+      "additionalProperties": false,
+      "properties": {
+        "local_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Local Id",
+          "type": "string"
+        },
+        "statement": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        }
+      },
+      "required": [
+        "local_id",
+        "statement"
+      ],
+      "title": "SubgoalV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": {
+      "const": "supervisor_goal_understanding_v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "input_id": {
+      "format": "uuid",
+      "title": "Input Id",
+      "type": "string"
+    },
+    "primary_goal": {
+      "maxLength": 1024,
+      "minLength": 1,
+      "title": "Primary Goal",
+      "type": "string"
+    },
+    "expected_deliverable": {
+      "maxLength": 1024,
+      "minLength": 1,
+      "title": "Expected Deliverable",
+      "type": "string"
+    },
+    "subgoals": {
+      "items": {
+        "$ref": "#/$defs/SubgoalV1"
+      },
+      "maxItems": 8,
+      "title": "Subgoals",
+      "type": "array"
+    },
+    "effective_constraint_refs": {
+      "items": {
+        "$ref": "#/$defs/ConstraintRefV1"
+      },
+      "maxItems": 64,
+      "title": "Effective Constraint Refs",
+      "type": "array"
+    },
+    "resource_refs": {
+      "items": {
+        "$ref": "#/$defs/ResourceRefV1"
+      },
+      "maxItems": 20,
+      "title": "Resource Refs",
+      "type": "array"
+    },
+    "success_criteria_proposals": {
+      "items": {
+        "$ref": "#/$defs/GoalCriterionProposalV1"
+      },
+      "maxItems": 12,
+      "minItems": 1,
+      "title": "Success Criteria Proposals",
+      "type": "array"
+    },
+    "safe_assumptions": {
+      "items": {
+        "$ref": "#/$defs/SafeAssumptionV1"
+      },
+      "maxItems": 8,
+      "title": "Safe Assumptions",
+      "type": "array"
+    },
+    "blocking_issues": {
+      "items": {
+        "$ref": "#/$defs/GoalBlockingIssueV1"
+      },
+      "maxItems": 3,
+      "title": "Blocking Issues",
+      "type": "array"
+    }
+  },
+  "required": [
+    "contract_version",
+    "input_id",
+    "primary_goal",
+    "expected_deliverable",
+    "subgoals",
+    "effective_constraint_refs",
+    "resource_refs",
+    "success_criteria_proposals",
+    "safe_assumptions",
+    "blocking_issues"
+  ],
+  "title": "GoalUnderstandingV1",
+  "type": "object"
+}

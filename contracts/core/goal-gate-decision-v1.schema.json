@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "GoalBlockingReasonV1": {
+      "enum": [
+        "GOAL_AMBIGUOUS",
+        "RESOURCE_SELECTION_REQUIRED",
+        "REQUIRED_PARAMETER_MISSING",
+        "CONSTRAINT_CONFLICT",
+        "OUTPUT_CHOICE_MATERIAL"
+      ],
+      "title": "GoalBlockingReasonV1",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "understanding_id": {
+      "format": "uuid",
+      "title": "Understanding Id",
+      "type": "string"
+    },
+    "understanding_digest": {
+      "maxLength": 64,
+      "minLength": 64,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Understanding Digest",
+      "type": "string"
+    },
+    "outcome": {
+      "enum": [
+        "READY_TO_PLAN",
+        "REQUEST_USER_INPUT"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "validated_issue_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+        "type": "string"
+      },
+      "maxItems": 3,
+      "title": "Validated Issue Ids",
+      "type": "array"
+    },
+    "accepted_assumption_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+        "type": "string"
+      },
+      "maxItems": 8,
+      "title": "Accepted Assumption Ids",
+      "type": "array"
+    },
+    "reason_codes": {
+      "items": {
+        "$ref": "#/$defs/GoalBlockingReasonV1"
+      },
+      "maxItems": 3,
+      "title": "Reason Codes",
+      "type": "array"
+    },
+    "gate_profile_digest": {
+      "maxLength": 64,
+      "minLength": 64,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Gate Profile Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "understanding_id",
+    "understanding_digest",
+    "outcome",
+    "validated_issue_ids",
+    "accepted_assumption_ids",
+    "reason_codes",
+    "gate_profile_digest"
+  ],
+  "title": "GoalGateDecisionV1",
+  "type": "object"
+}

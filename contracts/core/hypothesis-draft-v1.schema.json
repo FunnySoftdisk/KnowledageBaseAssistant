@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "local_id": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "title": "Local Id",
+      "type": "string"
+    },
+    "statement": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Statement",
+      "type": "string"
+    }
+  },
+  "required": [
+    "local_id",
+    "statement"
+  ],
+  "title": "HypothesisDraftV1",
+  "type": "object"
+}

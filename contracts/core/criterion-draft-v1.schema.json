@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "ArtifactCriterionTargetV1": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "ARTIFACT",
+          "title": "Kind",
+          "type": "string"
+        },
+        "producer_item_local_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Producer Item Local Id",
+          "type": "string"
+        },
+        "output_schema_key": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Output Schema Key",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "producer_item_local_id",
+        "output_schema_key"
+      ],
+      "title": "ArtifactCriterionTargetV1",
+      "type": "object"
+    },
+    "CitationCriterionTargetV1": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "CITATION",
+          "title": "Kind",
+          "type": "string"
+        },
+        "producer_item_local_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Producer Item Local Id",
+          "type": "string"
+        },
+        "min_citations": {
+          "maximum": 16,
+          "minimum": 1,
+          "title": "Min Citations",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "producer_item_local_id",
+        "min_citations"
+      ],
+      "title": "CitationCriterionTargetV1",
+      "type": "object"
+    },
+    "ConstraintRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "constraint_id": {
+          "format": "uuid",
+          "title": "Constraint Id",
+          "type": "string"
+        },
+        "input_id": {
+          "format": "uuid",
+          "title": "Input Id",
+          "type": "string"
+        },
+        "parser_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Parser Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "constraint_id",
+        "input_id",
+        "parser_version"
+      ],
+      "title": "ConstraintRefV1",
+      "type": "object"
+    },
+    "StateCriterionTargetV1": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "STATE",
+          "title": "Kind",
+          "type": "string"
+        },
+        "subject_item_local_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Subject Item Local Id",
+          "type": "string"
+        },
+        "expected_state": {
+          "const": "COMPLETED",
+          "title": "Expected State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "subject_item_local_id",
+        "expected_state"
+      ],
+      "title": "StateCriterionTargetV1",
+      "type": "object"
+    },
+    "UserCriterionTargetV1": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "USER",
+          "title": "Kind",
+          "type": "string"
+        },
+        "constraint_ref": {
+          "$ref": "#/$defs/ConstraintRefV1"
+        }
+      },
+      "required": [
+        "kind",
+        "constraint_ref"
+      ],
+      "title": "UserCriterionTargetV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "local_id": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "title": "Local Id",
+      "type": "string"
+    },
+    "statement": {
+      "maxLength": 1024,
+      "minLength": 1,
+      "title": "Statement",
+      "type": "string"
+    },
+    "goal_criterion_local_id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Goal Criterion Local Id"
+    },
+    "target": {
+      "discriminator": {
+        "mapping": {
+          "ARTIFACT": "#/$defs/ArtifactCriterionTargetV1",
+          "CITATION": "#/$defs/CitationCriterionTargetV1",
+          "STATE": "#/$defs/StateCriterionTargetV1",
+          "USER": "#/$defs/UserCriterionTargetV1"
+        },
+        "propertyName": "kind"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ArtifactCriterionTargetV1"
+        },
+        {
+          "$ref": "#/$defs/CitationCriterionTargetV1"
+        },
+        {
+          "$ref": "#/$defs/StateCriterionTargetV1"
+        },
+        {
+          "$ref": "#/$defs/UserCriterionTargetV1"
+        }
+      ],
+      "title": "Target"
+    }
+  },
+  "required": [
+    "local_id",
+    "statement",
+    "goal_criterion_local_id",
+    "target"
+  ],
+  "title": "CriterionDraftV1",
+  "type": "object"
+}

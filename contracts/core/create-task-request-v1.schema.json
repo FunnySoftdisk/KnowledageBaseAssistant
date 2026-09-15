@@ -1,0 +1,309 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "CreateTaskAttachmentV1": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "format": "uuid",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "sha256": {
+          "maxLength": 64,
+          "minLength": 64,
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "ordinal": {
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Ordinal",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "sha256",
+        "ordinal"
+      ],
+      "title": "CreateTaskAttachmentV1",
+      "type": "object"
+    },
+    "KnowledgeScopeModeV1": {
+      "enum": [
+        "NONE",
+        "DEFAULT_AUTHORIZED",
+        "EXPLICIT"
+      ],
+      "title": "KnowledgeScopeModeV1",
+      "type": "string"
+    },
+    "KnowledgeScopeV1": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "$ref": "#/$defs/KnowledgeScopeModeV1"
+        },
+        "directory_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Directory Ids",
+          "type": "array"
+        },
+        "knowledge_version_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Knowledge Version Ids",
+          "type": "array"
+        },
+        "include_personal": {
+          "title": "Include Personal",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "mode",
+        "directory_ids",
+        "knowledge_version_ids",
+        "include_personal"
+      ],
+      "title": "KnowledgeScopeV1",
+      "type": "object"
+    },
+    "OutputContractV1": {
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "MARKDOWN",
+            "JSON"
+          ],
+          "title": "Format",
+          "type": "string"
+        },
+        "delivery": {
+          "enum": [
+            "INLINE",
+            "ARTIFACT"
+          ],
+          "title": "Delivery",
+          "type": "string"
+        },
+        "language": {
+          "maxLength": 35,
+          "minLength": 1,
+          "title": "Language",
+          "type": "string"
+        },
+        "schema_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SchemaRefV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "template_or_skill_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResourceRefV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "citations": {
+          "enum": [
+            "REQUIRED",
+            "OPTIONAL",
+            "FORBIDDEN"
+          ],
+          "title": "Citations",
+          "type": "string"
+        },
+        "max_output_bytes": {
+          "maximum": 1048576,
+          "minimum": 1,
+          "title": "Max Output Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "format",
+        "delivery",
+        "language",
+        "schema_ref",
+        "template_or_skill_ref",
+        "citations",
+        "max_output_bytes"
+      ],
+      "title": "OutputContractV1",
+      "type": "object"
+    },
+    "ResourceDomainV1": {
+      "enum": [
+        "TASK_ATTACHMENT",
+        "TEAM_KNOWLEDGE",
+        "PERSONAL_KNOWLEDGE",
+        "TASK_RESULT"
+      ],
+      "title": "ResourceDomainV1",
+      "type": "string"
+    },
+    "ResourceRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "source_domain": {
+          "$ref": "#/$defs/ResourceDomainV1"
+        },
+        "resource_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "version_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Version Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_domain",
+        "resource_id",
+        "version_id"
+      ],
+      "title": "ResourceRefV1",
+      "type": "object"
+    },
+    "SchemaRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Schema Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "schema_digest": {
+          "maxLength": 64,
+          "minLength": 64,
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Schema Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_id",
+        "schema_version",
+        "schema_digest"
+      ],
+      "title": "SchemaRefV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "conversation_id": {
+      "format": "uuid",
+      "title": "Conversation Id",
+      "type": "string"
+    },
+    "query": {
+      "title": "Query",
+      "type": "string"
+    },
+    "attachments": {
+      "items": {
+        "$ref": "#/$defs/CreateTaskAttachmentV1"
+      },
+      "maxItems": 20,
+      "title": "Attachments",
+      "type": "array"
+    },
+    "knowledge_scope": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/KnowledgeScopeV1"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "output_contract": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/OutputContractV1"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "network_policy": {
+      "anyOf": [
+        {
+          "enum": [
+            "DENY",
+            "ASK",
+            "ALLOW"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Network Policy"
+    },
+    "selected_resource_refs": {
+      "items": {
+        "$ref": "#/$defs/ResourceRefV1"
+      },
+      "maxItems": 20,
+      "title": "Selected Resource Refs",
+      "type": "array"
+    },
+    "explicit_constraints": {
+      "items": {
+        "maxLength": 512,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 20,
+      "title": "Explicit Constraints",
+      "type": "array"
+    }
+  },
+  "required": [
+    "conversation_id",
+    "query",
+    "attachments",
+    "knowledge_scope",
+    "output_contract",
+    "network_policy",
+    "selected_resource_refs",
+    "explicit_constraints"
+  ],
+  "title": "CreateTaskRequestV1",
+  "type": "object"
+}

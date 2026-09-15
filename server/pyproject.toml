@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling==1.32.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "knowledge-system"
+version = "0.1.0.dev0"
+description = "团队知识助手核心工程；M0接口验证阶段，业务运行尚未就绪"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "pydantic-ai-slim[temporal]==2.42.0",
+  "temporalio==1.32.0",
+  "pydantic==2.13.5",
+  "httpx==0.28.1",
+  "langcodes==3.5.1",
+  "rfc8785==0.1.4",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "mypy>=1.15,<2", "ruff>=0.11,<1"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/knowledge_system"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src/knowledge_system"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

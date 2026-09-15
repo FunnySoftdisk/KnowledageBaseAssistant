@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "ArtifactRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "format": "uuid",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "artifact_type": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Artifact Type",
+          "type": "string"
+        },
+        "sha256": {
+          "maxLength": 64,
+          "minLength": 64,
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "schema_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Schema Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "artifact_type",
+        "sha256",
+        "schema_id",
+        "schema_version"
+      ],
+      "title": "ArtifactRefV1",
+      "type": "object"
+    },
+    "ConstraintRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "constraint_id": {
+          "format": "uuid",
+          "title": "Constraint Id",
+          "type": "string"
+        },
+        "input_id": {
+          "format": "uuid",
+          "title": "Input Id",
+          "type": "string"
+        },
+        "parser_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Parser Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "constraint_id",
+        "input_id",
+        "parser_version"
+      ],
+      "title": "ConstraintRefV1",
+      "type": "object"
+    },
+    "PolicySnapshotRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "policy_snapshot_id": {
+          "format": "uuid",
+          "title": "Policy Snapshot Id",
+          "type": "string"
+        },
+        "policy_revision": {
+          "minimum": 1,
+          "title": "Policy Revision",
+          "type": "integer"
+        },
+        "policy_digest": {
+          "maxLength": 64,
+          "minLength": 64,
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Policy Digest",
+          "type": "string"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "policy_snapshot_id",
+        "policy_revision",
+        "policy_digest",
+        "observed_at"
+      ],
+      "title": "PolicySnapshotRefV1",
+      "type": "object"
+    },
+    "ResourceDomainV1": {
+      "enum": [
+        "TASK_ATTACHMENT",
+        "TEAM_KNOWLEDGE",
+        "PERSONAL_KNOWLEDGE",
+        "TASK_RESULT"
+      ],
+      "title": "ResourceDomainV1",
+      "type": "string"
+    },
+    "ResourceRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "source_domain": {
+          "$ref": "#/$defs/ResourceDomainV1"
+        },
+        "resource_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "version_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Version Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_domain",
+        "resource_id",
+        "version_id"
+      ],
+      "title": "ResourceRefV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": {
+      "const": "supervisor_initial_plan_v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "task_id": {
+      "format": "uuid",
+      "title": "Task Id",
+      "type": "string"
+    },
+    "input_id": {
+      "format": "uuid",
+      "title": "Input Id",
+      "type": "string"
+    },
+    "goal_understanding_ref": {
+      "$ref": "#/$defs/ArtifactRefV1"
+    },
+    "effective_constraint_refs": {
+      "items": {
+        "$ref": "#/$defs/ConstraintRefV1"
+      },
+      "maxItems": 64,
+      "title": "Effective Constraint Refs",
+      "type": "array"
+    },
+    "output_contract_ref": {
+      "$ref": "#/$defs/ArtifactRefV1"
+    },
+    "resource_refs": {
+      "items": {
+        "$ref": "#/$defs/ResourceRefV1"
+      },
+      "maxItems": 20,
+      "title": "Resource Refs",
+      "type": "array"
+    },
+    "context_pack_ref": {
+      "$ref": "#/$defs/ArtifactRefV1"
+    },
+    "capability_planning_view_ref": {
+      "$ref": "#/$defs/ArtifactRefV1"
+    },
+    "budget_reservation_ref": {
+      "$ref": "#/$defs/ArtifactRefV1"
+    },
+    "policy_snapshot_ref": {
+      "$ref": "#/$defs/PolicySnapshotRefV1"
+    },
+    "deadline_at": {
+      "format": "date-time",
+      "title": "Deadline At",
+      "type": "string"
+    },
+    "prompt_profile": {
+      "const": "supervisor-initial-plan-v1",
+      "title": "Prompt Profile",
+      "type": "string"
+    }
+  },
+  "required": [
+    "contract_version",
+    "task_id",
+    "input_id",
+    "goal_understanding_ref",
+    "effective_constraint_refs",
+    "output_contract_ref",
+    "resource_refs",
+    "context_pack_ref",
+    "capability_planning_view_ref",
+    "budget_reservation_ref",
+    "policy_snapshot_ref",
+    "deadline_at",
+    "prompt_profile"
+  ],
+  "title": "InitialPlanningContextV1",
+  "type": "object"
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "capability_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Capability Id",
+      "type": "string"
+    },
+    "capability_version": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Capability Version",
+      "type": "string"
+    },
+    "integrity_digest": {
+      "maxLength": 64,
+      "minLength": 64,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Integrity Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "capability_id",
+    "capability_version",
+    "integrity_digest"
+  ],
+  "title": "CapabilityRefV1",
+  "type": "object"
+}

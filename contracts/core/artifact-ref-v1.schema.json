@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "artifact_id": {
+      "format": "uuid",
+      "title": "Artifact Id",
+      "type": "string"
+    },
+    "artifact_type": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Artifact Type",
+      "type": "string"
+    },
+    "sha256": {
+      "maxLength": 64,
+      "minLength": 64,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Sha256",
+      "type": "string"
+    },
+    "schema_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Schema Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "artifact_id",
+    "artifact_type",
+    "sha256",
+    "schema_id",
+    "schema_version"
+  ],
+  "title": "ArtifactRefV1",
+  "type": "object"
+}

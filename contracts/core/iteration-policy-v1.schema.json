@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "mode": {
+      "enum": [
+        "SINGLE_PASS",
+        "BOUNDED_REPEAT"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "max_iterations": {
+      "maximum": 3,
+      "minimum": 1,
+      "title": "Max Iterations",
+      "type": "integer"
+    },
+    "stop_criterion_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+        "type": "string"
+      },
+      "maxItems": 12,
+      "title": "Stop Criterion Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "mode",
+    "max_iterations",
+    "stop_criterion_ids"
+  ],
+  "title": "IterationPolicyV1",
+  "type": "object"
+}

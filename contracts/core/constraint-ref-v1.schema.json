@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "constraint_id": {
+      "format": "uuid",
+      "title": "Constraint Id",
+      "type": "string"
+    },
+    "input_id": {
+      "format": "uuid",
+      "title": "Input Id",
+      "type": "string"
+    },
+    "parser_version": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Parser Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "constraint_id",
+    "input_id",
+    "parser_version"
+  ],
+  "title": "ConstraintRefV1",
+  "type": "object"
+}

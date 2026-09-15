@@ -1,0 +1,464 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "ArtifactCriterionTargetV1": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "ARTIFACT",
+          "title": "Kind",
+          "type": "string"
+        },
+        "producer_item_local_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Producer Item Local Id",
+          "type": "string"
+        },
+        "output_schema_key": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Output Schema Key",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "producer_item_local_id",
+        "output_schema_key"
+      ],
+      "title": "ArtifactCriterionTargetV1",
+      "type": "object"
+    },
+    "ArtifactRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "format": "uuid",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "artifact_type": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Artifact Type",
+          "type": "string"
+        },
+        "sha256": {
+          "maxLength": 64,
+          "minLength": 64,
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "schema_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Schema Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "artifact_type",
+        "sha256",
+        "schema_id",
+        "schema_version"
+      ],
+      "title": "ArtifactRefV1",
+      "type": "object"
+    },
+    "CapabilityRequirementV1": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Category",
+          "type": "string"
+        },
+        "required_input_kinds": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Required Input Kinds",
+          "type": "array"
+        },
+        "required_output_kind": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Required Output Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "category",
+        "required_input_kinds",
+        "required_output_kind"
+      ],
+      "title": "CapabilityRequirementV1",
+      "type": "object"
+    },
+    "CitationCriterionTargetV1": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "CITATION",
+          "title": "Kind",
+          "type": "string"
+        },
+        "producer_item_local_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Producer Item Local Id",
+          "type": "string"
+        },
+        "min_citations": {
+          "maximum": 16,
+          "minimum": 1,
+          "title": "Min Citations",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "producer_item_local_id",
+        "min_citations"
+      ],
+      "title": "CitationCriterionTargetV1",
+      "type": "object"
+    },
+    "ConstraintRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "constraint_id": {
+          "format": "uuid",
+          "title": "Constraint Id",
+          "type": "string"
+        },
+        "input_id": {
+          "format": "uuid",
+          "title": "Input Id",
+          "type": "string"
+        },
+        "parser_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Parser Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "constraint_id",
+        "input_id",
+        "parser_version"
+      ],
+      "title": "ConstraintRefV1",
+      "type": "object"
+    },
+    "CriterionDraftV1": {
+      "additionalProperties": false,
+      "properties": {
+        "local_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Local Id",
+          "type": "string"
+        },
+        "statement": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        },
+        "goal_criterion_local_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Goal Criterion Local Id"
+        },
+        "target": {
+          "discriminator": {
+            "mapping": {
+              "ARTIFACT": "#/$defs/ArtifactCriterionTargetV1",
+              "CITATION": "#/$defs/CitationCriterionTargetV1",
+              "STATE": "#/$defs/StateCriterionTargetV1",
+              "USER": "#/$defs/UserCriterionTargetV1"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ArtifactCriterionTargetV1"
+            },
+            {
+              "$ref": "#/$defs/CitationCriterionTargetV1"
+            },
+            {
+              "$ref": "#/$defs/StateCriterionTargetV1"
+            },
+            {
+              "$ref": "#/$defs/UserCriterionTargetV1"
+            }
+          ],
+          "title": "Target"
+        }
+      },
+      "required": [
+        "local_id",
+        "statement",
+        "goal_criterion_local_id",
+        "target"
+      ],
+      "title": "CriterionDraftV1",
+      "type": "object"
+    },
+    "HypothesisDraftV1": {
+      "additionalProperties": false,
+      "properties": {
+        "local_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Local Id",
+          "type": "string"
+        },
+        "statement": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        }
+      },
+      "required": [
+        "local_id",
+        "statement"
+      ],
+      "title": "HypothesisDraftV1",
+      "type": "object"
+    },
+    "IterationPolicyV1": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "SINGLE_PASS",
+            "BOUNDED_REPEAT"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "max_iterations": {
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Max Iterations",
+          "type": "integer"
+        },
+        "stop_criterion_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "maxItems": 12,
+          "title": "Stop Criterion Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "mode",
+        "max_iterations",
+        "stop_criterion_ids"
+      ],
+      "title": "IterationPolicyV1",
+      "type": "object"
+    },
+    "PlanItemDraftV1": {
+      "additionalProperties": false,
+      "properties": {
+        "local_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Local Id",
+          "type": "string"
+        },
+        "objective": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Objective",
+          "type": "string"
+        },
+        "executor_requirement": {
+          "enum": [
+            "SUPERVISOR",
+            "SPECIALIST",
+            "DYNAMIC_ALLOWED"
+          ],
+          "title": "Executor Requirement",
+          "type": "string"
+        },
+        "capability_requirements": {
+          "items": {
+            "$ref": "#/$defs/CapabilityRequirementV1"
+          },
+          "title": "Capability Requirements",
+          "type": "array"
+        },
+        "input_artifact_refs": {
+          "items": {
+            "$ref": "#/$defs/ArtifactRefV1"
+          },
+          "maxItems": 20,
+          "title": "Input Artifact Refs",
+          "type": "array"
+        },
+        "output_schema_ref": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Output Schema Ref",
+          "type": "string"
+        },
+        "depends_on_local_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "maxItems": 12,
+          "title": "Depends On Local Ids",
+          "type": "array"
+        },
+        "iteration_policy": {
+          "$ref": "#/$defs/IterationPolicyV1"
+        }
+      },
+      "required": [
+        "local_id",
+        "objective",
+        "executor_requirement",
+        "capability_requirements",
+        "input_artifact_refs",
+        "output_schema_ref",
+        "depends_on_local_ids",
+        "iteration_policy"
+      ],
+      "title": "PlanItemDraftV1",
+      "type": "object"
+    },
+    "StateCriterionTargetV1": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "STATE",
+          "title": "Kind",
+          "type": "string"
+        },
+        "subject_item_local_id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "title": "Subject Item Local Id",
+          "type": "string"
+        },
+        "expected_state": {
+          "const": "COMPLETED",
+          "title": "Expected State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "subject_item_local_id",
+        "expected_state"
+      ],
+      "title": "StateCriterionTargetV1",
+      "type": "object"
+    },
+    "UserCriterionTargetV1": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "USER",
+          "title": "Kind",
+          "type": "string"
+        },
+        "constraint_ref": {
+          "$ref": "#/$defs/ConstraintRefV1"
+        }
+      },
+      "required": [
+        "kind",
+        "constraint_ref"
+      ],
+      "title": "UserCriterionTargetV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": {
+      "const": "supervisor_initial_plan_v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "goal_understanding_ref": {
+      "$ref": "#/$defs/ArtifactRefV1"
+    },
+    "hypotheses": {
+      "items": {
+        "$ref": "#/$defs/HypothesisDraftV1"
+      },
+      "maxItems": 8,
+      "title": "Hypotheses",
+      "type": "array"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/PlanItemDraftV1"
+      },
+      "maxItems": 12,
+      "minItems": 1,
+      "title": "Items",
+      "type": "array"
+    },
+    "success_criteria": {
+      "items": {
+        "$ref": "#/$defs/CriterionDraftV1"
+      },
+      "maxItems": 12,
+      "minItems": 1,
+      "title": "Success Criteria",
+      "type": "array"
+    },
+    "initial_ready_item_local_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+        "type": "string"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "title": "Initial Ready Item Local Ids",
+      "type": "array"
+    },
+    "prompt_profile": {
+      "const": "supervisor-initial-plan-v1",
+      "title": "Prompt Profile",
+      "type": "string"
+    }
+  },
+  "required": [
+    "contract_version",
+    "goal_understanding_ref",
+    "hypotheses",
+    "items",
+    "success_criteria",
+    "initial_ready_item_local_ids",
+    "prompt_profile"
+  ],
+  "title": "InitialPlanDraftV1",
+  "type": "object"
+}

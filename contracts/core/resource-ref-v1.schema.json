@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "ResourceDomainV1": {
+      "enum": [
+        "TASK_ATTACHMENT",
+        "TEAM_KNOWLEDGE",
+        "PERSONAL_KNOWLEDGE",
+        "TASK_RESULT"
+      ],
+      "title": "ResourceDomainV1",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "source_domain": {
+      "$ref": "#/$defs/ResourceDomainV1"
+    },
+    "resource_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Resource Id",
+      "type": "string"
+    },
+    "version_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Version Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source_domain",
+    "resource_id",
+    "version_id"
+  ],
+  "title": "ResourceRefV1",
+  "type": "object"
+}

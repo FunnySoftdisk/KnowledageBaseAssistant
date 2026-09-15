@@ -1,0 +1,514 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "ArtifactRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "format": "uuid",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "artifact_type": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Artifact Type",
+          "type": "string"
+        },
+        "sha256": {
+          "maxLength": 64,
+          "minLength": 64,
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "schema_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Schema Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "artifact_type",
+        "sha256",
+        "schema_id",
+        "schema_version"
+      ],
+      "title": "ArtifactRefV1",
+      "type": "object"
+    },
+    "ConstraintRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "constraint_id": {
+          "format": "uuid",
+          "title": "Constraint Id",
+          "type": "string"
+        },
+        "input_id": {
+          "format": "uuid",
+          "title": "Input Id",
+          "type": "string"
+        },
+        "parser_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Parser Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "constraint_id",
+        "input_id",
+        "parser_version"
+      ],
+      "title": "ConstraintRefV1",
+      "type": "object"
+    },
+    "KnowledgeScopeModeV1": {
+      "enum": [
+        "NONE",
+        "DEFAULT_AUTHORIZED",
+        "EXPLICIT"
+      ],
+      "title": "KnowledgeScopeModeV1",
+      "type": "string"
+    },
+    "KnowledgeScopeV1": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "$ref": "#/$defs/KnowledgeScopeModeV1"
+        },
+        "directory_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Directory Ids",
+          "type": "array"
+        },
+        "knowledge_version_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Knowledge Version Ids",
+          "type": "array"
+        },
+        "include_personal": {
+          "title": "Include Personal",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "mode",
+        "directory_ids",
+        "knowledge_version_ids",
+        "include_personal"
+      ],
+      "title": "KnowledgeScopeV1",
+      "type": "object"
+    },
+    "NetworkControlV1": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "enum": [
+            "DENY",
+            "ASK",
+            "ALLOW"
+          ],
+          "title": "Value",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/NetworkPolicySourceV1"
+        }
+      },
+      "required": [
+        "value",
+        "source"
+      ],
+      "title": "NetworkControlV1",
+      "type": "object"
+    },
+    "NetworkPolicySourceV1": {
+      "enum": [
+        "UI_FIELD",
+        "QUERY_SPAN",
+        "SYSTEM_DEFAULT"
+      ],
+      "title": "NetworkPolicySourceV1",
+      "type": "string"
+    },
+    "OutputContractV1": {
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "enum": [
+            "MARKDOWN",
+            "JSON"
+          ],
+          "title": "Format",
+          "type": "string"
+        },
+        "delivery": {
+          "enum": [
+            "INLINE",
+            "ARTIFACT"
+          ],
+          "title": "Delivery",
+          "type": "string"
+        },
+        "language": {
+          "maxLength": 35,
+          "minLength": 1,
+          "title": "Language",
+          "type": "string"
+        },
+        "schema_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SchemaRefV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "template_or_skill_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResourceRefV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "citations": {
+          "enum": [
+            "REQUIRED",
+            "OPTIONAL",
+            "FORBIDDEN"
+          ],
+          "title": "Citations",
+          "type": "string"
+        },
+        "max_output_bytes": {
+          "maximum": 1048576,
+          "minimum": 1,
+          "title": "Max Output Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "format",
+        "delivery",
+        "language",
+        "schema_ref",
+        "template_or_skill_ref",
+        "citations",
+        "max_output_bytes"
+      ],
+      "title": "OutputContractV1",
+      "type": "object"
+    },
+    "PolicySnapshotRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "policy_snapshot_id": {
+          "format": "uuid",
+          "title": "Policy Snapshot Id",
+          "type": "string"
+        },
+        "policy_revision": {
+          "minimum": 1,
+          "title": "Policy Revision",
+          "type": "integer"
+        },
+        "policy_digest": {
+          "maxLength": 64,
+          "minLength": 64,
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Policy Digest",
+          "type": "string"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "policy_snapshot_id",
+        "policy_revision",
+        "policy_digest",
+        "observed_at"
+      ],
+      "title": "PolicySnapshotRefV1",
+      "type": "object"
+    },
+    "ResourceDomainV1": {
+      "enum": [
+        "TASK_ATTACHMENT",
+        "TEAM_KNOWLEDGE",
+        "PERSONAL_KNOWLEDGE",
+        "TASK_RESULT"
+      ],
+      "title": "ResourceDomainV1",
+      "type": "string"
+    },
+    "ResourceRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "source_domain": {
+          "$ref": "#/$defs/ResourceDomainV1"
+        },
+        "resource_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "version_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Version Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_domain",
+        "resource_id",
+        "version_id"
+      ],
+      "title": "ResourceRefV1",
+      "type": "object"
+    },
+    "SchemaRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Schema Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "schema_digest": {
+          "maxLength": 64,
+          "minLength": 64,
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Schema Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_id",
+        "schema_version",
+        "schema_digest"
+      ],
+      "title": "SchemaRefV1",
+      "type": "object"
+    },
+    "StructuredTaskControlsV1": {
+      "additionalProperties": false,
+      "properties": {
+        "knowledge_scope": {
+          "$ref": "#/$defs/KnowledgeScopeV1"
+        },
+        "network_policy": {
+          "$ref": "#/$defs/NetworkControlV1"
+        },
+        "output_contract": {
+          "$ref": "#/$defs/OutputContractV1"
+        },
+        "selected_resource_refs": {
+          "items": {
+            "$ref": "#/$defs/ResourceRefV1"
+          },
+          "maxItems": 20,
+          "title": "Selected Resource Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "knowledge_scope",
+        "network_policy",
+        "output_contract",
+        "selected_resource_refs"
+      ],
+      "title": "StructuredTaskControlsV1",
+      "type": "object"
+    },
+    "TaskAttachmentBindingRefV1": {
+      "additionalProperties": false,
+      "properties": {
+        "binding_id": {
+          "format": "uuid",
+          "title": "Binding Id",
+          "type": "string"
+        },
+        "task_id": {
+          "format": "uuid",
+          "title": "Task Id",
+          "type": "string"
+        },
+        "artifact_ref": {
+          "$ref": "#/$defs/ArtifactRefV1"
+        },
+        "ordinal": {
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Ordinal",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "binding_id",
+        "task_id",
+        "artifact_ref",
+        "ordinal"
+      ],
+      "title": "TaskAttachmentBindingRefV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "contract_version": {
+      "const": "task_input_snapshot_v1",
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "input_id": {
+      "format": "uuid",
+      "title": "Input Id",
+      "type": "string"
+    },
+    "task_id": {
+      "format": "uuid",
+      "title": "Task Id",
+      "type": "string"
+    },
+    "input_revision": {
+      "minimum": 1,
+      "title": "Input Revision",
+      "type": "integer"
+    },
+    "message_id": {
+      "format": "uuid",
+      "title": "Message Id",
+      "type": "string"
+    },
+    "message_ref": {
+      "$ref": "#/$defs/ArtifactRefV1"
+    },
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "conversation_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Conversation Id"
+    },
+    "attachment_binding_refs": {
+      "items": {
+        "$ref": "#/$defs/TaskAttachmentBindingRefV1"
+      },
+      "maxItems": 20,
+      "title": "Attachment Binding Refs",
+      "type": "array"
+    },
+    "structured_controls": {
+      "$ref": "#/$defs/StructuredTaskControlsV1"
+    },
+    "task_constraint_refs": {
+      "items": {
+        "$ref": "#/$defs/ConstraintRefV1"
+      },
+      "maxItems": 64,
+      "title": "Task Constraint Refs",
+      "type": "array"
+    },
+    "policy_snapshot_ref": {
+      "$ref": "#/$defs/PolicySnapshotRefV1"
+    },
+    "locale": {
+      "maxLength": 35,
+      "minLength": 1,
+      "title": "Locale",
+      "type": "string"
+    },
+    "timezone": {
+      "maxLength": 64,
+      "minLength": 1,
+      "title": "Timezone",
+      "type": "string"
+    },
+    "snapshot_digest": {
+      "maxLength": 64,
+      "minLength": 64,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Snapshot Digest",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "contract_version",
+    "input_id",
+    "task_id",
+    "input_revision",
+    "message_id",
+    "message_ref",
+    "actor_id",
+    "organization_id",
+    "conversation_id",
+    "attachment_binding_refs",
+    "structured_controls",
+    "task_constraint_refs",
+    "policy_snapshot_ref",
+    "locale",
+    "timezone",
+    "snapshot_digest",
+    "created_at"
+  ],
+  "title": "TaskInputSnapshotV1",
+  "type": "object"
+}
