@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 import unittest
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
@@ -18,6 +19,7 @@ from knowledge_system.infrastructure.persistence import (
     GoalCompletionWriteSet,
     PlanActivationConflictError,
     PlanActivationWriteSet,
+    PlanAttemptCompletion,
     SqlAlchemyUnitOfWork,
     build_async_engine,
     build_session_factory,
@@ -37,6 +39,8 @@ from knowledge_system.infrastructure.persistence.task_models import (
 
 TEST_DATABASE_URL = os.environ.get("KNOWLEDGE_TEST_DATABASE_URL")
 DIGEST = "a" * 64
+PLAN_STARTED_AT = datetime(2026, 1, 1, tzinfo=UTC)
+PLAN_ENDED_AT = PLAN_STARTED_AT + timedelta(minutes=1)
 
 
 def new_ids() -> dict[str, UUID]:
@@ -295,6 +299,9 @@ def make_plan_attempt(ids: dict[str, UUID], *, plan_version: int) -> TaskAttempt
         temporal_child_workflow_id=child_workflow_id(ids["task"], ids["attempt"]),
         status="RUNNING",
         external_effect_state="NO_EFFECT",
+        row_version=1,
+        created_at=PLAN_STARTED_AT,
+        started_at=PLAN_STARTED_AT,
     )
 
 
@@ -501,6 +508,14 @@ def make_plan_write_set(
     item, runtime = make_item_and_runtime(ids, plan_version=plan_version)
     return PlanActivationWriteSet(
         plan_version=make_plan(ids, plan_version=plan_version, predecessor=predecessor),
+        attempt_completion=PlanAttemptCompletion(
+            task_attempt_id=ids["attempt"],
+            expected_row_version=1,
+            result_kind="SUCCEEDED",
+            result_schema_version="attempt_completed_v1",
+            result_digest=DIGEST,
+            ended_at=PLAN_ENDED_AT,
+        ),
         task_attempt=make_plan_attempt(ids, plan_version=plan_version),
         goal_understanding=make_goal_understanding(ids),
         items=(item,),
@@ -606,10 +621,24 @@ class PostgresPlanActivationTests(unittest.IsolatedAsyncioTestCase):
                 .scalars()
                 .all()
             )
+            attempt_row = (
+                await connection.execute(
+                    text(
+                        "SELECT status,result_kind,result_schema_version,result_digest,"
+                        "row_version,ended_at IS NOT NULL "
+                        "FROM workflow.task_attempt WHERE id=:attempt"
+                    ),
+                    {"attempt": ids["attempt"]},
+                )
+            ).one()
         self.assertEqual(active_plan, 1)
         self.assertEqual(status, "RUNNING")
         self.assertEqual(last_sequence, 2)
         self.assertEqual(list(sequences), [1, 2])
+        self.assertEqual(
+            tuple(attempt_row),
+            ("COMPLETED", "SUCCEEDED", "attempt_completed_v1", DIGEST, 2, True),
+        )
 
     async def test_ready_goal_completion_is_atomic_and_idempotent(self) -> None:
         ids = new_ids()
@@ -731,6 +760,7 @@ class PostgresPlanActivationTests(unittest.IsolatedAsyncioTestCase):
         bad_event = make_event(ids, event_key="event", payload_digest="Z" * 64)
         faulted = PlanActivationWriteSet(
             plan_version=write_set.plan_version,
+            attempt_completion=write_set.attempt_completion,
             task_attempt=write_set.task_attempt,
             goal_understanding=write_set.goal_understanding,
             items=write_set.items,
@@ -789,6 +819,43 @@ class PostgresPlanActivationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             await self.count_task(ids, "workflow.task_attempt"),
             2,  # 第二次PLAN Attempt未落库
+        )
+
+    async def test_replay_rejects_plan_attempt_terminal_digest_drift(self) -> None:
+        ids = new_ids()
+        await self.seed_all(ids)
+        await self.activate(make_plan_write_set(ids, plan_version=1, predecessor=None))
+        async with self.engine.begin() as connection:
+            await connection.execute(
+                text("UPDATE workflow.task_attempt SET result_digest=:digest WHERE id=:attempt"),
+                {"attempt": ids["attempt"], "digest": "b" * 64},
+            )
+
+        with self.assertRaisesRegex(
+            PlanActivationConflictError, "PLAN_ATTEMPT_TERMINAL_STATE_CONFLICT"
+        ):
+            await self.activate(make_plan_write_set(ids, plan_version=1, predecessor=None))
+        self.assertEqual(await self.count_task(ids, "workflow.task_event"), 2)
+
+    async def test_stale_plan_attempt_row_version_rolls_back_activation(self) -> None:
+        ids = new_ids()
+        await self.seed_all(ids)
+        write_set = make_plan_write_set(ids, plan_version=1, predecessor=None)
+        assert write_set.attempt_completion is not None
+        stale = replace(
+            write_set,
+            attempt_completion=replace(write_set.attempt_completion, expected_row_version=2),
+        )
+
+        with self.assertRaisesRegex(
+            PlanActivationConflictError, "PLAN_ACTIVATION_ATTEMPT_CONFLICT"
+        ):
+            await self.activate(stale)
+        self.assertEqual(await self.count_task(ids, "workflow.task_plan_version"), 0)
+        self.assertEqual(await self.count_task(ids, "workflow.task_event"), 0)
+        self.assertEqual(
+            await self.count_task(ids, "workflow.task_attempt"),
+            1,  # 仅种子GOAL Attempt，内联PLAN Attempt也随事务回滚/未插入。
         )
 
     async def test_same_version_with_different_digest_is_rejected(self) -> None:

@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 from knowledge_system.infrastructure.persistence import (
     PersistenceContractError,
     PlanActivationWriteSet,
+    PlanAttemptCompletion,
 )
 from knowledge_system.infrastructure.persistence.attempt_models import TaskAttemptRecord
 from knowledge_system.infrastructure.persistence.planning_models import (
@@ -147,6 +148,27 @@ def _outbox(event_id: UUID, *, destination: str = "MQ") -> OutboxMessageRecord:
 
 
 class PlanActivationWriteSetTests(unittest.TestCase):
+    def test_attempt_completion_contract_is_strict(self) -> None:
+        completion = PlanAttemptCompletion(
+            task_attempt_id=uuid4(),
+            expected_row_version=1,
+            result_kind="SUCCEEDED",
+            result_schema_version="attempt_completed_v1",
+            result_digest=_DIGEST,
+            ended_at=_ACTIVATED_AT,
+        )
+        completion.validate()
+        invalid = PlanAttemptCompletion(
+            task_attempt_id=completion.task_attempt_id,
+            expected_row_version=1,
+            result_kind="SUCCEEDED",
+            result_schema_version="attempt_completed_v1",
+            result_digest="A" * 64,
+            ended_at=_ACTIVATED_AT,
+        )
+        with self.assertRaisesRegex(PersistenceContractError, "PLAN_ATTEMPT_RESULT_DIGEST_INVALID"):
+            invalid.validate()
+
     def test_empty_write_set_has_expected_shape(self) -> None:
         write_set = PlanActivationWriteSet(plan_version=_plan(uuid4(), 1))
         self.assertEqual(write_set.items, ())

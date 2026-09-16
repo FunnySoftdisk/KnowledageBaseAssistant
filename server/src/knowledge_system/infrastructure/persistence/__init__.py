@@ -12,6 +12,7 @@ from .planning import (
     GoalCompletionWriteSet,
     PlanActivationConflictError,
     PlanActivationWriteSet,
+    PlanAttemptCompletion,
     PlanTransactionRepository,
 )
 from .repositories import (
@@ -40,6 +41,7 @@ __all__ = [
     "PersistenceContractError",
     "PlanActivationConflictError",
     "PlanActivationWriteSet",
+    "PlanAttemptCompletion",
     "PlanTransactionRepository",
     "SqlAlchemyUnitOfWork",
     "TaskCreationWriteSet",

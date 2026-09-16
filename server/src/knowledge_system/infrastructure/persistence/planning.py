@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Select, func, select, update
@@ -39,6 +40,35 @@ class PlanActivationConflictError(RuntimeError):
 
 class GoalCompletionConflictError(RuntimeError):
     """Goal提交遇到Task/Input/Attempt版本漂移。"""
+
+
+@dataclass(frozen=True, slots=True)
+class PlanAttemptCompletion:
+    """Plan激活事务内写入的Child成功终态。"""
+
+    task_attempt_id: UUID
+    expected_row_version: int
+    result_kind: str
+    result_schema_version: str
+    result_digest: str
+    ended_at: datetime
+
+    def validate(self) -> None:
+        if self.expected_row_version < 1:
+            raise PersistenceContractError("PLAN_ATTEMPT_ROW_VERSION_INVALID")
+        # 只有已经编译、校验并可激活的成功Plan才能进入本事务。
+        if self.result_kind != "SUCCEEDED":
+            raise PersistenceContractError("PLAN_ATTEMPT_RESULT_KIND_INVALID")
+        if self.result_schema_version != "attempt_completed_v1":
+            raise PersistenceContractError("PLAN_ATTEMPT_RESULT_SCHEMA_INVALID")
+        if (
+            len(self.result_digest) != 64
+            or self.result_digest != self.result_digest.lower()
+            or any(character not in "0123456789abcdef" for character in self.result_digest)
+        ):
+            raise PersistenceContractError("PLAN_ATTEMPT_RESULT_DIGEST_INVALID")
+        if self.ended_at.tzinfo is None or self.ended_at.utcoffset() is None:
+            raise PersistenceContractError("PLAN_ATTEMPT_ENDED_AT_INVALID")
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,15 +142,16 @@ class GoalCompletionWriteSet:
 
 @dataclass(frozen=True, slots=True)
 class PlanActivationWriteSet:
-    """单个Plan版本及其不可变定义/运行投影、Goal、Event与Outbox的原子激活写集。
+    """Plan定义、Attempt成功终态、运行投影、Event与Outbox的原子激活写集。
 
-    ``task_attempt``是产出本Plan版本的PLAN/REPLAN Attempt（被``plan_version.task_attempt_id``
-    引用）；``goal_understanding``被``plan_version.goal_understanding_id``引用。二者的Goal Attempt
-    若不在本写集内，必须已在先前事务落库（由数据库外键复核）。事件序号由Repository锁Task后
-    分配，调用方无需预置``sequence``。
+    ``attempt_completion``携带Child成功结果的稳定终态字段；``task_attempt``是产出本Plan版本的
+    PLAN Attempt（被``plan_version.task_attempt_id``引用），后续Temporal接线应在Child启动前落库，
+    当前也允许在本写集内补建RUNNING行。``goal_understanding``被Plan引用；不在写集时必须已在先前
+    事务落库。事件序号由Repository锁Task后分配，调用方无需预置``sequence``。
     """
 
     plan_version: TaskPlanVersionRecord
+    attempt_completion: PlanAttemptCompletion | None = None
     task_attempt: TaskAttemptRecord | None = None
     goal_understanding: TaskGoalUnderstandingRecord | None = None
     items: tuple[TaskPlanItemDefinitionRecord, ...] = ()
@@ -140,6 +171,10 @@ class PlanActivationWriteSet:
         predecessor = self.plan_version.predecessor_version
         if predecessor is not None and predecessor >= plan_version:
             raise PersistenceContractError("PLAN_PREDECESSOR_INVALID")
+        if self.attempt_completion is not None:
+            self.attempt_completion.validate()
+            if self.attempt_completion.task_attempt_id != self.plan_version.task_attempt_id:
+                raise PersistenceContractError("PLAN_ATTEMPT_COMPLETION_ID_MISMATCH")
         children: tuple[_PlanChildRow, ...] = (
             *self.items,
             *self.hypotheses,
@@ -310,12 +345,15 @@ class PlanTransactionRepository:
             raise GoalCompletionConflictError("GOAL_COMPLETION_CAS_CONFLICT")
 
     async def activate_plan_version(self, write_set: PlanActivationWriteSet) -> None:
-        """锁Task后按FK顺序原子写Attempt/Goal/Plan/定义/运行/Event/Outbox，并以CAS切换唯一Active指针。"""
+        """原子激活唯一Plan，并以CAS完成对应PLAN Attempt。"""
 
         write_set.validate_relations()
         task_id = write_set.plan_version.task_id
         plan_version = write_set.plan_version.plan_version
         predecessor = write_set.plan_version.predecessor_version
+        completion = write_set.attempt_completion
+        if completion is None:
+            raise PersistenceContractError("PLAN_ATTEMPT_COMPLETION_REQUIRED")
 
         task = await self.get_task_for_update(task_id)
         if task is None:
@@ -332,7 +370,19 @@ class PlanTransactionRepository:
                 and existing.goal_understanding_id == write_set.plan_version.goal_understanding_id
                 and existing.status == "ACTIVE"
             ):
-                return
+                existing_attempt = await self._session.get(
+                    TaskAttemptRecord, write_set.plan_version.task_attempt_id
+                )
+                if (
+                    existing_attempt is not None
+                    and existing_attempt.status == "COMPLETED"
+                    and existing_attempt.result_kind == completion.result_kind
+                    and existing_attempt.result_schema_version == completion.result_schema_version
+                    and existing_attempt.result_digest == completion.result_digest
+                    and existing_attempt.ended_at == completion.ended_at
+                ):
+                    return
+                raise PlanActivationConflictError("PLAN_ATTEMPT_TERMINAL_STATE_CONFLICT")
             raise PlanActivationConflictError("PLAN_ACTIVATION_PREDECESSOR_CONFLICT")
         # DEV-01只承诺首轮激活；REPLAN还需要执行栅栏、旧Plan处置和Carry事务。
         if predecessor is not None or plan_version != 1:
@@ -366,8 +416,10 @@ class PlanTransactionRepository:
             raise PlanActivationConflictError("PLAN_ACTIVATION_GOAL_ATTEMPT_CONFLICT")
         attempt = write_set.task_attempt
         if attempt is None:
-            attempt = await self._session.get(
-                TaskAttemptRecord, write_set.plan_version.task_attempt_id
+            attempt = await self._session.scalar(
+                select(TaskAttemptRecord)
+                .where(TaskAttemptRecord.id == write_set.plan_version.task_attempt_id)
+                .with_for_update()
             )
         if (
             attempt is None
@@ -377,8 +429,13 @@ class PlanTransactionRepository:
             or attempt.plan_version != 1
             or attempt.agent_instance_id != write_set.plan_version.created_by_agent_instance_id
             or attempt.status != "RUNNING"
+            or attempt.row_version != completion.expected_row_version
         ):
             raise PlanActivationConflictError("PLAN_ACTIVATION_ATTEMPT_CONFLICT")
+        if (attempt.created_at is not None and completion.ended_at < attempt.created_at) or (
+            attempt.started_at is not None and completion.ended_at < attempt.started_at
+        ):
+            raise PlanActivationConflictError("PLAN_ATTEMPT_COMPLETION_TIME_CONFLICT")
         if not any(event.event_type == "PLAN_ACTIVATED" for event in write_set.events):
             raise PersistenceContractError("PLAN_ACTIVATION_EVENT_REQUIRED")
         if not write_set.outbox_messages:
@@ -416,6 +473,31 @@ class PlanTransactionRepository:
         )
         if activated_id is None:
             raise PlanActivationConflictError("PLAN_ACTIVATION_CAS_CONFLICT")
+
+        attempt_statement = (
+            update(TaskAttemptRecord)
+            .where(
+                TaskAttemptRecord.id == completion.task_attempt_id,
+                TaskAttemptRecord.task_id == task_id,
+                TaskAttemptRecord.input_id == write_set.plan_version.input_id,
+                TaskAttemptRecord.attempt_kind == "PLAN",
+                TaskAttemptRecord.plan_version == plan_version,
+                TaskAttemptRecord.status == "RUNNING",
+                TaskAttemptRecord.row_version == completion.expected_row_version,
+            )
+            .values(
+                status="COMPLETED",
+                result_kind=completion.result_kind,
+                result_schema_version=completion.result_schema_version,
+                result_digest=completion.result_digest,
+                ended_at=completion.ended_at,
+                row_version=TaskAttemptRecord.row_version + 1,
+            )
+            .returning(TaskAttemptRecord.id)
+        )
+        attempt_result = await self._session.execute(attempt_statement)
+        if attempt_result.scalar_one_or_none() is None:
+            raise PlanActivationConflictError("PLAN_ATTEMPT_COMPLETION_CAS_CONFLICT")
 
     async def get_task_for_update(self, task_id: UUID) -> IntelligentTaskRecord | None:
         statement: Select[tuple[IntelligentTaskRecord]] = select(IntelligentTaskRecord).where(

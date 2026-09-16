@@ -66,7 +66,9 @@ class CoreExportTests(unittest.TestCase):
         )
         self.assertEqual(matrix["blocked_by"], [])
         self.assertEqual(matrix["orm_mapping_status"], "PARTIAL")
-        self.assertEqual(matrix["migration_pg_status"], "DEV_01_GOAL_COMPLETION_SCOPE_PASS")
+        self.assertEqual(
+            matrix["migration_pg_status"], "DEV_01_GOAL_COMPLETION_SCOPE_PASS"
+        )
         self.assertEqual(matrix["latest_verification"]["revision"], "0004")
         self.assertEqual(matrix["latest_verification"]["alembic_schema_drift"], "NONE")
         self.assertEqual(
@@ -79,6 +81,10 @@ class CoreExportTests(unittest.TestCase):
         )
         self.assertEqual(
             matrix["latest_verification"]["plan_activation_concurrent_single_active"],
+            "PASS",
+        )
+        self.assertEqual(
+            matrix["latest_verification"]["plan_activation_attempt_terminal_atomic"],
             "PASS",
         )
         self.assertEqual(
