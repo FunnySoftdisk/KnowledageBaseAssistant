@@ -2,10 +2,11 @@
 
 import unittest
 
+from pydantic import ValidationError
+
 from knowledge_system.modules.model_gateway.application.token_accounting import (
     TOKEN_ACCOUNTING_ADAPTER,
 )
-from pydantic import ValidationError
 
 
 class TokenAccountingTests(unittest.TestCase):

@@ -55,16 +55,36 @@ class CoreExportTests(unittest.TestCase):
             target.symlink_to(EXPORT_ROOT / target.name)
             self.assertEqual(check_exports(directory), [target.name])
 
-    def test_field_matrix_exposes_unimplemented_database_boundaries(self) -> None:
+    def test_field_matrix_exposes_current_database_boundaries(self) -> None:
         matrix = json.loads(
             (PROJECT_ROOT / "contracts/core/core-field-matrix-v1.json").read_bytes()
         )
         self.assertEqual(matrix["decision_status"], "ACCEPTED")
         self.assertEqual(
-            matrix["implementation_stage"], "DTO_SCHEMA_AND_PURE_SEMANTIC_PARTIAL"
+            matrix["implementation_stage"],
+            "DEV_01C_ATTEMPT_RUNTIME_DEPENDENCIES",
         )
-        self.assertEqual(matrix["orm_mapping_status"], "NOT_RUN")
-        self.assertEqual(matrix["migration_pg_status"], "NOT_RUN")
+        self.assertEqual(matrix["blocked_by"], [])
+        self.assertEqual(matrix["orm_mapping_status"], "PARTIAL")
+        self.assertEqual(matrix["migration_pg_status"], "DEV_01C_ATTEMPT_RUNTIME_SCOPE_PASS")
+        self.assertEqual(matrix["latest_verification"]["revision"], "0003")
+        self.assertEqual(matrix["latest_verification"]["alembic_schema_drift"], "NONE")
+        self.assertEqual(
+            matrix["latest_verification"]["task_creation_repository_uow"],
+            "PASS",
+        )
+        self.assertEqual(
+            matrix["latest_verification"]["task_transaction_integration_tests"],
+            "5 passed",
+        )
+        self.assertEqual(
+            matrix["latest_verification"]["plan_activation_concurrent_single_active"],
+            "PASS",
+        )
+        self.assertIn(
+            "workflow.intelligent_task.authorization_ref_id",
+            matrix["deferred_foreign_keys"],
+        )
         task_rules = matrix["column_rules"]["workflow.intelligent_task"]
         self.assertEqual(task_rules["public_initial_status"], "QUEUED")
         self.assertEqual(

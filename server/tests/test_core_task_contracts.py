@@ -5,6 +5,8 @@ import unittest
 from datetime import UTC, datetime
 from uuid import uuid4
 
+from pydantic import ValidationError
+
 from knowledge_system.modules.tasking.domain.core_types import (
     ArtifactRefV1,
     PolicySnapshotRefV1,
@@ -31,7 +33,6 @@ from knowledge_system.modules.tasking.domain.input_contracts import (
     normalize_network_control,
     parse_create_task_request,
 )
-from pydantic import ValidationError
 
 ZERO_SHA = "0" * 64
 

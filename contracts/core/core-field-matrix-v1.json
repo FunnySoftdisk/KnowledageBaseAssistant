@@ -1,16 +1,83 @@
 {
   "contract_version": "core_field_matrix_v1",
-  "decision_ref": "CORE-01..CORE-40",
+  "decision_ref": "CORE-01..CORE-40;DEV-00-BATCH-01",
   "decision_status": "ACCEPTED",
-  "implementation_stage": "DTO_SCHEMA_AND_PURE_SEMANTIC_PARTIAL",
-  "orm_mapping_status": "NOT_RUN",
-  "migration_pg_status": "NOT_RUN",
-  "blocked_by": [
-    "SQLALCHEMY_ALEMBIC_PSYCOPG_EXACT_VERSIONS_NOT_APPROVED",
-    "COMPILED_CRITERION_UUID_NAMESPACE_NOT_APPROVED",
-    "OUTPUT_CONTRACT_RESOLVER_RULE_TABLE_NOT_APPROVED",
-    "DEPENDENCY_TABLE_FIELD_CONTRACTS_NOT_CLOSED"
+  "implementation_stage": "DEV_01C_ATTEMPT_RUNTIME_DEPENDENCIES",
+  "orm_mapping_status": "PARTIAL",
+  "migration_pg_status": "DEV_01C_ATTEMPT_RUNTIME_SCOPE_PASS",
+  "blocked_by": [],
+  "implemented_orm_tables": [
+    "iam.organization",
+    "iam.user_account",
+    "content.artifact",
+    "policy.policy_snapshot",
+    "workflow.conversation",
+    "workflow.conversation_message",
+    "workflow.intelligent_task",
+    "workflow.task_input_snapshot",
+    "workflow.task_goal_understanding",
+    "workflow.task_plan_version",
+    "workflow.task_plan_item_definition",
+    "workflow.task_plan_hypothesis",
+    "workflow.task_compiled_criterion",
+    "workflow.plan_item_runtime",
+    "workflow.agent_instance",
+    "workflow.task_attempt",
+    "workflow.context_pack",
+    "workflow.context_pack_item",
+    "workflow.task_attachment_binding",
+    "workflow.task_explicit_constraint",
+    "workflow.task_intent_parse",
+    "workflow.fixed_workflow_admission",
+    "workflow.task_event",
+    "integration.outbox_message",
+    "integration.idempotency_record"
   ],
+  "deferred_foreign_keys": {
+    "workflow.intelligent_task.authorization_ref_id": "iam.authorization_snapshot projection not accepted",
+    "workflow.task_attachment_binding.preflight_run_id": "content.preflight_run projection not accepted",
+    "content.artifact.origin_upload_id": "content upload projection not accepted",
+    "content.artifact.preflight_run_id": "content.preflight_run projection not accepted",
+    "workflow.task_attempt.plan_item_id": "task_plan_item_definition composite PK cannot be referenced by single column; ACTION runtime package deferred",
+    "workflow.task_attempt.action_run_group_id": "action_run_group projection not accepted",
+    "workflow.task_attempt.capability_binding_snapshot_id": "capability binding snapshot projection not accepted",
+    "workflow.task_attempt.budget_reservation_id": "budget reservation projection not accepted",
+    "workflow.task_attempt.replan_admission_id": "replan admission projection not accepted",
+    "workflow.task_attempt.final_synthesis_snapshot_id": "final synthesis snapshot projection not accepted",
+    "workflow.task_attempt.runtime_decision_id": "runtime decision projection not accepted",
+    "workflow.context_pack.action_attempt_id": "action attempt binding deferred to ACTION runtime package",
+    "workflow.context_pack.authorization_ref_id": "iam.authorization_snapshot projection not accepted"
+  },
+  "latest_verification": {
+    "revision": "0003",
+    "postgresql": "16",
+    "upgrade_from_empty": "PASS",
+    "downgrade_to_base": "PASS",
+    "alembic_schema_drift": "NONE",
+    "goal_plan_tables_round_trip": "PASS",
+    "attempt_runtime_tables_round_trip": "PASS",
+    "task_transaction_integration_tests": "5 passed",
+    "task_creation_repository_uow": "PASS",
+    "idempotency_replay_and_hash_conflict": "PASS",
+    "concurrent_same_key_single_task": "PASS",
+    "implicit_rollback": "PASS",
+    "plan_activation_write_set_validation": "PASS",
+    "plan_activation_first_version": "PASS",
+    "plan_activation_atomic_goal_event_outbox": "PASS",
+    "plan_activation_rollback_fault_injection": "PASS",
+    "plan_activation_duplicate_submission": "PASS",
+    "plan_activation_orphan_records": "PASS",
+    "plan_activation_concurrent_single_active": "PASS",
+    "goal_ready_with_gate_rejected_model_issue": "PASS"
+  },
+  "approved_implementation_inputs": {
+    "sqlalchemy": "2.0.53",
+    "alembic": "1.20.0",
+    "postgresql_driver": "psycopg[binary]==3.3.5",
+    "postgresql_url_scheme": "postgresql+psycopg",
+    "compiled_criterion_namespace": "55038ee7-a436-5faa-8873-6da561c886d1",
+    "output_contract_resolver": "output_contract_resolver_v1"
+  },
   "column_rules": {
     "workflow.intelligent_task": {
       "required": ["query_artifact_id", "current_input_id"],
@@ -64,6 +131,52 @@
       "contract_version",
       "snapshot_digest",
       "created_at"
+    ],
+    "workflow.task_goal_understanding": [
+      "understanding_id",
+      "task_id",
+      "input_id",
+      "task_attempt_id",
+      "contract_version",
+      "prompt_profile",
+      "prompt_profile_digest",
+      "model_alias",
+      "goal_context_artifact_id",
+      "context_digest",
+      "raw_model_artifact_id",
+      "goal_artifact_id",
+      "understanding_digest",
+      "gate_profile",
+      "gate_profile_digest",
+      "gate_artifact_id",
+      "gate_digest",
+      "gate_outcome",
+      "subgoal_count",
+      "criterion_count",
+      "assumption_count",
+      "blocking_issue_count",
+      "created_at"
+    ],
+    "workflow.task_plan_version": [
+      "task_id",
+      "plan_version",
+      "predecessor_version",
+      "input_id",
+      "task_attempt_id",
+      "goal_understanding_id",
+      "planning_context_artifact_id",
+      "capability_planning_view_artifact_id",
+      "raw_model_artifact_id",
+      "validated_draft_artifact_id",
+      "validation_artifact_id",
+      "compiled_plan_artifact_id",
+      "compiled_plan_digest",
+      "revision_reason",
+      "status",
+      "created_by_agent_instance_id",
+      "created_at",
+      "activated_at",
+      "completed_at"
     ],
     "workflow.task_plan_item_definition": [
       "task_id",
@@ -121,22 +234,129 @@
       "started_at",
       "completed_at",
       "updated_at"
+    ],
+    "workflow.agent_instance": [
+      "id",
+      "task_id",
+      "parent_agent_instance_id",
+      "manifest_id",
+      "manifest_version",
+      "kind",
+      "delegated_scope",
+      "status",
+      "expires_at",
+      "created_reason",
+      "created_reason_hash",
+      "created_at",
+      "completed_at"
+    ],
+    "workflow.task_attempt": [
+      "id", "task_id", "input_id", "plan_version", "plan_item_id", "action_run_group_id",
+      "attempt_kind", "attempt_no", "conversation_id", "agent_instance_id",
+      "agent_registration_key", "manifest_id", "manifest_version", "manifest_digest",
+      "context_pack_id", "context_pack_hash", "grant_snapshot_digest",
+      "capability_binding_snapshot_id", "capability_binding_snapshot_digest",
+      "budget_reservation_id", "reservation_version", "input_schema_version", "input_digest",
+      "pydantic_run_id", "resumes_task_attempt_id", "temporal_child_workflow_id",
+      "temporal_child_run_id", "worker_id", "lease_generation", "status", "result_kind",
+      "result_schema_version", "result_digest", "suspension_kind", "error_code",
+      "failure_class", "diagnostic_artifact_id", "external_effect_state",
+      "replan_admission_id", "replan_event_high_watermark", "replan_context_artifact_id",
+      "execution_snapshot_artifact_id", "final_synthesis_snapshot_id",
+      "final_synthesis_snapshot_digest", "runtime_decision_id", "current_work_version",
+      "row_version", "created_at", "started_at", "ended_at", "updated_at"
+    ],
+    "workflow.context_pack": [
+      "id", "task_id", "action_attempt_id", "created_by_attempt_id", "conversation_id",
+      "actor_id", "authorization_ref_id", "authorization_version", "state",
+      "context_policy_version", "conversation_memory_version", "user_private_memory_version",
+      "task_memory_version", "runtime_version", "plan_version", "agent_manifest_version",
+      "model_revision", "prompt_version", "tool_schema_versions", "output_schema_id",
+      "output_schema_version", "tokenizer_revision", "chat_template_hash", "max_context",
+      "reserved_output", "protocol_overhead", "safety_margin", "input_tokens",
+      "body_artifact_id", "pack_hash", "input_digest", "created_at", "consumed_at"
+    ],
+    "workflow.context_pack_item": [
+      "context_pack_id", "position", "item_id", "item_type", "source_type", "source_id",
+      "source_version", "content_hash", "token_count", "priority", "rank_score",
+      "compression_level", "selection_reason", "trust", "bucket"
     ]
   },
-  "dependency_tables_requiring_full_field_closure": [
-    "content.artifact",
-    "policy.policy_snapshot",
-    "workflow.task_attempt",
-    "workflow.task_event",
-    "integration.outbox_message",
-    "integration.idempotency_record",
-    "workflow.conversation_message",
-    "workflow.intelligent_task",
-    "workflow.task_attachment_binding",
-    "workflow.task_explicit_constraint",
-    "workflow.task_intent_parse",
-    "workflow.fixed_workflow_admission",
-    "workflow.user_input_request",
-    "workflow.task_plan_version"
-  ]
+  "accepted_dependency_table_projections_pending_orm": {
+    "content.artifact": [
+      "artifact_id", "organization_id", "owner_id", "origin_upload_id", "purpose",
+      "artifact_type", "storage_backend", "object_key", "size_bytes", "sha256",
+      "declared_media_type", "detected_media_type", "schema_id", "schema_version",
+      "schema_digest", "data_labels_json", "encryption_profile", "preflight_run_id",
+      "state", "retention_expires_at", "legal_hold", "row_version",
+      "created_by_actor_id", "created_at", "updated_at"
+    ],
+    "policy.policy_snapshot": [
+      "policy_snapshot_id", "organization_id", "actor_id", "policy_revision",
+      "policy_bundle_id", "policy_bundle_version", "policy_bundle_digest",
+      "effective_scope_digest", "policy_digest", "observed_at", "expires_at", "created_at"
+    ],
+    "workflow.task_event": [
+      "id", "task_id", "sequence", "event_type", "event_schema_version",
+      "workflow_relevant", "business_ref_type", "business_ref_id", "business_version",
+      "observation_projection_profile_version", "observation_expected_count", "payload_json",
+      "payload_digest", "created_at"
+    ],
+    "integration.outbox_message": [
+      "id", "event_id", "aggregate_type", "aggregate_id", "aggregate_version", "destination",
+      "schema_version", "payload_json", "payload_digest", "publish_status", "available_at",
+      "attempt_count", "claimed_by", "claimed_at", "published_at", "last_error_code",
+      "row_version", "created_at", "updated_at"
+    ],
+    "integration.idempotency_record": [
+      "id", "scope", "actor_id", "key_digest", "key_hash_version", "request_hash", "status",
+      "resource_type", "resource_id", "response_code", "response_body_json", "response_digest",
+      "created_at", "updated_at", "expires_at"
+    ],
+    "workflow.conversation_message": [
+      "id", "conversation_id", "role", "message_kind", "content_artifact_id", "task_id",
+      "sequence", "revision", "supersedes_id", "content_hash", "state", "created_at"
+    ],
+    "workflow.intelligent_task": [
+      "id", "organization_id", "owner_id", "rerun_of_task_id", "conversation_id",
+      "query_artifact_id", "initial_input_id", "current_input_id", "authorization_ref_id",
+      "status", "active_plan_version", "temporal_workflow_id", "last_event_sequence", "budget",
+      "budget_used", "deadline_at", "result_artifact_id", "error_code", "version", "created_at",
+      "started_at", "completed_at", "updated_at"
+    ],
+    "workflow.task_attachment_binding": [
+      "binding_id", "task_id", "artifact_id", "owner_id", "introduced_by_message_id",
+      "source_sha256", "preflight_run_id", "detected_media_type", "ordinal", "state",
+      "task_terminal_at", "expires_at", "created_at", "row_version"
+    ],
+    "workflow.task_explicit_constraint": [
+      "constraint_id", "task_id", "input_id", "kind", "normalized_value", "source",
+      "source_field", "source_span_start", "source_span_end", "polarity", "parser_version",
+      "resolution_status", "created_at"
+    ],
+    "workflow.task_intent_parse": [
+      "parse_id", "task_id", "input_id", "parser_version", "constraint_set_digest",
+      "classification_schema_version", "classification_artifact_id", "fixed_intent_candidate",
+      "required_slots_json", "missing_slots_json", "ambiguity_flags_json", "evidence_spans_json",
+      "model_profile_ref_json", "status", "created_at"
+    ],
+    "workflow.fixed_workflow_admission": [
+      "admission_id", "task_id", "input_id", "parse_id", "profile_id", "profile_version",
+      "profile_digest", "anchor_grammar_version", "anchor_grammar_digest", "normalization_profile",
+      "slot_resolver_profile", "slot_resolver_digest", "language_alias_map_version",
+      "language_alias_map_digest", "candidate", "decision", "check_results_json",
+      "reason_codes_json", "anchor_matches_json", "slot_resolution_json", "workflow_id",
+      "workflow_version", "output_contract_ref", "output_contract_digest", "renderer_profile",
+      "renderer_digest", "classification_schema_version", "model_profile_version",
+      "prompt_profile_version", "created_at"
+    ],
+    "workflow.user_input_request": [
+      "id", "task_id", "input_id", "origin", "source_task_attempt_id", "question_artifact_id",
+      "input_schema_json", "response_contract_version", "display_summary", "status",
+      "response_artifact_id", "response_size_bytes", "goal_understanding_id",
+      "clarification_round_no", "resume_bundle_id", "deferred_call_id",
+      "runtime_blocking_issue_id", "issue_fingerprint", "request_version", "row_version",
+      "requested_at", "expires_at", "submitted_at"
+    ]
+  }
 }

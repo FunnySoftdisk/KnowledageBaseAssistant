@@ -5,9 +5,10 @@
 ## 允许公开
 
 - `.gitattributes`与`.gitignore`；
-- `server/pyproject.toml`、`server/uv.lock`；
+- `server/pyproject.toml`、`server/uv.lock`与`server/alembic.ini`；
 - `server/src/`下的工程源码；
 - `server/tests/`下与公开源码对应的测试；
+- `server/migrations/`下的数据库迁移链；
 - `contracts/core/`下由公开源码生成的核心机器契约；
 - `tools/core_contract_exports.py`及其测试；
 - `tools/build_public_snapshot.py`及其测试；
@@ -25,6 +26,6 @@
 
 ## 发布原则
 
-公开快照只能由`tools/build_public_snapshot.py`生成。工具从Git已跟踪文件中按硬编码白名单复制内容，拒绝符号链接、非文件、非空输出目录和常见凭据模式。开发阶段不发布根README；发布前必须在快照目录重新运行测试与秘密扫描。
+公开快照只能由`tools/build_public_snapshot.py`生成。工具从Git已跟踪文件中按硬编码白名单复制内容，拒绝符号链接、非文件、非空输出目录和常见凭据模式。开发阶段不发布README；发布前必须在快照目录重新运行测试与秘密扫描。
 
 公开仓库使用独立的无父提交历史。内部仓库不得直接push到公开远程，避免后续提交再次携带被排除材料。

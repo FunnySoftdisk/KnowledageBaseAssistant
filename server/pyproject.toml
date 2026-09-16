@@ -14,10 +14,20 @@ dependencies = [
   "httpx==0.28.1",
   "langcodes==3.5.1",
   "rfc8785==0.1.4",
+  "SQLAlchemy==2.0.53",
+  "alembic==1.20.0",
+  "psycopg[binary]==3.3.5",
 ]
 
 [dependency-groups]
-dev = ["pytest>=8,<10", "mypy>=1.15,<2", "ruff>=0.11,<1"]
+api = ["fastapi==0.141.1", "uvicorn==0.52.4"]
+auth = ["argon2-cffi==25.1.0", "PyJWT[crypto]==2.14.0", "cryptography==50.0.1"]
+test = ["pytest==9.1.1", "pytest-asyncio==1.4.0"]
+quality = ["mypy==1.20.2", "ruff==0.16.7"]
+dev = [
+  { include-group = "test" },
+  { include-group = "quality" },
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/knowledge_system"]
@@ -37,3 +47,9 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"migrations/versions/*.py" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["knowledge_system"]

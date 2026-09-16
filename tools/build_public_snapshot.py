@@ -16,6 +16,7 @@ EXACT_FILES = frozenset(
         ".gitattributes",
         ".gitignore",
         "PUBLIC_EXPORT.md",
+        "server/alembic.ini",
         "server/pyproject.toml",
         "server/uv.lock",
         "tools/build_public_snapshot.py",
@@ -26,6 +27,7 @@ EXACT_FILES = frozenset(
 )
 PREFIXES = (
     "contracts/core/",
+    "server/migrations/",
     "server/src/",
     "server/tests/",
 )
@@ -57,6 +59,8 @@ def tracked_files() -> list[str]:
 
 
 def destination_for(source: str) -> str | None:
+    if Path(source).name.casefold() == "readme.md":
+        return None
     if source in REMAPPED_FILES:
         return REMAPPED_FILES[source]
     if source in EXACT_FILES or source.startswith(PREFIXES):

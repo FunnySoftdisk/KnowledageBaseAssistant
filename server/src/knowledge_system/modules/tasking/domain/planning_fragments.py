@@ -24,7 +24,19 @@ from .core_types import (
 from .goal_contracts import LocalId
 
 PLAN_ITEM_NAMESPACE = uuid5(NAMESPACE_URL, "urn:knowledge-system:task-plan-local:v1")
+COMPILED_CRITERION_NAMESPACE = uuid5(
+    NAMESPACE_URL, "urn:knowledge-system:compiled-criterion:v1"
+)
 LOCAL_ID_PATTERN = re.compile(r"[a-z][a-z0-9_-]{0,63}")
+POLICY_RULE_ID_PATTERN = re.compile(r"[a-z][a-z0-9_.:-]{0,127}")
+
+
+class CriterionSourceKindV1(StrEnum):
+    USER = "USER"
+    OUTPUT_CONTRACT = "OUTPUT_CONTRACT"
+    POLICY = "POLICY"
+    GOAL = "GOAL"
+    PLAN = "PLAN"
 
 
 class CapabilityRequirementV1(StrictContractV1):
@@ -198,6 +210,35 @@ def plan_item_id(task_id: UUID, plan_version: int, source_local_id: str) -> UUID
     if plan_version < 1 or LOCAL_ID_PATTERN.fullmatch(source_local_id) is None:
         raise ValueError("PLAN_ITEM_ID_INPUT_INVALID")
     return uuid5(PLAN_ITEM_NAMESPACE, f"{str(task_id).lower()}:{plan_version}:{source_local_id}")
+
+
+def compiled_criterion_id(
+    task_id: UUID,
+    plan_version: int,
+    source_kind: CriterionSourceKindV1,
+    source_key: str,
+) -> UUID:
+    """按已批准来源身份生成Compiled Criterion UUIDv5。"""
+
+    if plan_version < 1:
+        raise ValueError("COMPILED_CRITERION_ID_INPUT_INVALID")
+    if source_kind is CriterionSourceKindV1.USER:
+        try:
+            canonical_key = str(UUID(source_key))
+        except ValueError as error:
+            raise ValueError("COMPILED_CRITERION_SOURCE_KEY_INVALID") from error
+        if canonical_key != source_key:
+            raise ValueError("COMPILED_CRITERION_SOURCE_KEY_INVALID")
+    elif source_kind is CriterionSourceKindV1.OUTPUT_CONTRACT:
+        if source_key != "contract":
+            raise ValueError("COMPILED_CRITERION_SOURCE_KEY_INVALID")
+    elif source_kind is CriterionSourceKindV1.POLICY:
+        if POLICY_RULE_ID_PATTERN.fullmatch(source_key) is None:
+            raise ValueError("COMPILED_CRITERION_SOURCE_KEY_INVALID")
+    elif LOCAL_ID_PATTERN.fullmatch(source_key) is None:
+        raise ValueError("COMPILED_CRITERION_SOURCE_KEY_INVALID")
+    name = f"{str(task_id).lower()}:{plan_version}:{source_kind.value}:{source_key}"
+    return uuid5(COMPILED_CRITERION_NAMESPACE, name)
 
 
 def validate_plan_relations(

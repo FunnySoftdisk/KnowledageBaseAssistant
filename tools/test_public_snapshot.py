@@ -16,6 +16,8 @@ class PublicSnapshotTests(unittest.TestCase):
     def test_allowlist_and_remapping(self) -> None:
         self.assertIsNone(destination_for("public/README.md"))
         self.assertIsNone(destination_for("README.md"))
+        self.assertIsNone(destination_for("contracts/core/README.md"))
+        self.assertIsNone(destination_for("server/migrations/README.md"))
         self.assertEqual(
             destination_for("server/src/knowledge_system/__init__.py"),
             "server/src/knowledge_system/__init__.py",
@@ -40,8 +42,17 @@ class PublicSnapshotTests(unittest.TestCase):
             report = build_snapshot(output)
             self.assertEqual(report["status"], "PASS")
             self.assertFalse((output / "README.md").exists())
+            self.assertFalse((output / "contracts/core/README.md").exists())
+            self.assertFalse((output / "server/migrations/README.md").exists())
             self.assertTrue((output / "PUBLIC_EXPORT.md").is_file())
             self.assertTrue((output / "server/pyproject.toml").is_file())
+            self.assertTrue((output / "server/alembic.ini").is_file())
+            self.assertTrue((output / "server/migrations/env.py").is_file())
+            self.assertTrue(
+                (
+                    output / "server/migrations/versions/0002_goal_plan_persistence.py"
+                ).is_file()
+            )
             self.assertTrue((output / "contracts/core/manifest.json").is_file())
             self.assertFalse((output / "docs").exists())
             self.assertFalse((output / "deploy").exists())
@@ -58,7 +69,9 @@ class PublicSnapshotTests(unittest.TestCase):
                 build_snapshot(output)
 
     def test_output_inside_private_project_is_rejected(self) -> None:
-        with self.assertRaisesRegex(PublicExportError, "OUTPUT_INSIDE_PRIVATE_PROJECT_FORBIDDEN"):
+        with self.assertRaisesRegex(
+            PublicExportError, "OUTPUT_INSIDE_PRIVATE_PROJECT_FORBIDDEN"
+        ):
             build_snapshot(PROJECT_ROOT / ".public-snapshot-test")
 
     def test_secret_markers_are_rejected(self) -> None:
