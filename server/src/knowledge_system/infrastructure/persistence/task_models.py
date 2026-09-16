@@ -429,6 +429,115 @@ class FixedWorkflowAdmissionRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class UserInputRequestRecord(Base):
+    __tablename__ = "user_input_request"
+    __table_args__ = (
+        CheckConstraint(
+            "origin IN ('GOAL_CLARIFICATION','DEFERRED_TOOL','RUNTIME_RESOLUTION')",
+            name="origin_allowed",
+        ),
+        CheckConstraint(
+            "status IN ('PENDING','SUBMITTED','EXPIRED','CANCELLED')",
+            name="status_allowed",
+        ),
+        CheckConstraint("request_version >= 1", name="request_version_positive"),
+        CheckConstraint("row_version >= 1", name="row_version_positive"),
+        CheckConstraint("expires_at > requested_at", name="expiry_after_request"),
+        CheckConstraint(
+            "(status = 'SUBMITTED' AND response_artifact_id IS NOT NULL AND "
+            "response_size_bytes BETWEEN 1 AND 16384 AND submitted_at IS NOT NULL) OR "
+            "(status <> 'SUBMITTED' AND response_artifact_id IS NULL AND "
+            "response_size_bytes IS NULL AND submitted_at IS NULL)",
+            name="response_status_shape",
+        ),
+        CheckConstraint(
+            "(origin = 'GOAL_CLARIFICATION' AND goal_understanding_id IS NOT NULL AND "
+            "clarification_round_no BETWEEN 1 AND 2 AND resume_bundle_id IS NULL AND "
+            "deferred_call_id IS NULL AND runtime_blocking_issue_id IS NULL AND "
+            "issue_fingerprint IS NULL) OR "
+            "(origin = 'DEFERRED_TOOL' AND goal_understanding_id IS NULL AND "
+            "clarification_round_no IS NULL AND resume_bundle_id IS NOT NULL AND "
+            "deferred_call_id IS NOT NULL AND runtime_blocking_issue_id IS NULL AND "
+            "issue_fingerprint IS NULL) OR "
+            "(origin = 'RUNTIME_RESOLUTION' AND goal_understanding_id IS NULL AND "
+            "clarification_round_no IS NULL AND resume_bundle_id IS NULL AND "
+            "deferred_call_id IS NULL AND runtime_blocking_issue_id IS NOT NULL AND "
+            "issue_fingerprint IS NOT NULL)",
+            name="origin_branch_shape",
+        ),
+        CheckConstraint(
+            "origin = 'DEFERRED_TOOL' OR "
+            "response_contract_version = 'clarification_response_contract_v1'",
+            name="clarification_response_contract",
+        ),
+        CheckConstraint(
+            "issue_fingerprint IS NULL OR issue_fingerprint ~ '^[0-9a-f]{64}$'",
+            name="issue_fingerprint_lower_hex",
+        ),
+        UniqueConstraint("task_id", "input_id", "clarification_round_no"),
+        Index(
+            "uq_user_input_request_deferred_call",
+            "resume_bundle_id",
+            "deferred_call_id",
+            unique=True,
+            postgresql_where=text("origin = 'DEFERRED_TOOL'"),
+        ),
+        Index(
+            "uq_user_input_request_runtime_issue",
+            "task_id",
+            "issue_fingerprint",
+            unique=True,
+            postgresql_where=text("origin = 'RUNTIME_RESOLUTION'"),
+        ),
+        Index(
+            "uq_user_input_request_task_pending",
+            "task_id",
+            unique=True,
+            postgresql_where=text("status = 'PENDING'"),
+        ),
+        {"schema": "workflow"},
+    )
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    task_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("workflow.intelligent_task.id", ondelete="RESTRICT")
+    )
+    input_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("workflow.task_input_snapshot.input_id", ondelete="RESTRICT"),
+    )
+    origin: Mapped[str] = mapped_column(String(32))
+    source_task_attempt_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("workflow.task_attempt.id", ondelete="RESTRICT")
+    )
+    question_artifact_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("content.artifact.artifact_id", ondelete="RESTRICT")
+    )
+    input_schema_json: Mapped[dict[str, object]] = mapped_column(JSONB)
+    response_contract_version: Mapped[str] = mapped_column(String(64))
+    display_summary: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(16))
+    response_artifact_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("content.artifact.artifact_id", ondelete="RESTRICT")
+    )
+    response_size_bytes: Mapped[int | None] = mapped_column(Integer)
+    goal_understanding_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("workflow.task_goal_understanding.understanding_id", ondelete="RESTRICT"),
+    )
+    clarification_round_no: Mapped[int | None] = mapped_column(Integer)
+    # Resume Bundle与Runtime Blocking Issue投影属于后续运行包，本迁移只保留批准列。
+    resume_bundle_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True))
+    deferred_call_id: Mapped[str | None] = mapped_column(String(255))
+    runtime_blocking_issue_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True))
+    issue_fingerprint: Mapped[str | None] = mapped_column(CHAR(64))
+    request_version: Mapped[int] = mapped_column(Integer, default=1)
+    row_version: Mapped[int] = mapped_column(Integer, default=1)
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class TaskEventRecord(Base):
     __tablename__ = "task_event"
     __table_args__ = (

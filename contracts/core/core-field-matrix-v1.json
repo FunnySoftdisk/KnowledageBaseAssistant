@@ -2,9 +2,9 @@
   "contract_version": "core_field_matrix_v1",
   "decision_ref": "CORE-01..CORE-40;DEV-00-BATCH-01",
   "decision_status": "ACCEPTED",
-  "implementation_stage": "DEV_01C_ATTEMPT_RUNTIME_DEPENDENCIES",
+  "implementation_stage": "DEV_01_GOAL_COMPLETION_AND_CLARIFICATION",
   "orm_mapping_status": "PARTIAL",
-  "migration_pg_status": "DEV_01C_ATTEMPT_RUNTIME_SCOPE_PASS",
+  "migration_pg_status": "DEV_01_GOAL_COMPLETION_SCOPE_PASS",
   "blocked_by": [],
   "implemented_orm_tables": [
     "iam.organization",
@@ -16,6 +16,7 @@
     "workflow.intelligent_task",
     "workflow.task_input_snapshot",
     "workflow.task_goal_understanding",
+    "workflow.user_input_request",
     "workflow.task_plan_version",
     "workflow.task_plan_item_definition",
     "workflow.task_plan_hypothesis",
@@ -46,16 +47,20 @@
     "workflow.task_attempt.final_synthesis_snapshot_id": "final synthesis snapshot projection not accepted",
     "workflow.task_attempt.runtime_decision_id": "runtime decision projection not accepted",
     "workflow.context_pack.action_attempt_id": "action attempt binding deferred to ACTION runtime package",
-    "workflow.context_pack.authorization_ref_id": "iam.authorization_snapshot projection not accepted"
+    "workflow.context_pack.authorization_ref_id": "iam.authorization_snapshot projection not accepted",
+    "workflow.user_input_request.resume_bundle_id": "agent_resume_bundle projection belongs to the deferred runtime package",
+    "workflow.user_input_request.runtime_blocking_issue_id": "runtime_blocking_issue projection belongs to the runtime controller package"
   },
   "latest_verification": {
-    "revision": "0003",
+    "revision": "0004",
     "postgresql": "16",
     "upgrade_from_empty": "PASS",
     "downgrade_to_base": "PASS",
     "alembic_schema_drift": "NONE",
     "goal_plan_tables_round_trip": "PASS",
     "attempt_runtime_tables_round_trip": "PASS",
+    "goal_clarification_table_round_trip": "PASS",
+    "postgres_integration_tests": "19 passed",
     "task_transaction_integration_tests": "5 passed",
     "task_creation_repository_uow": "PASS",
     "idempotency_replay_and_hash_conflict": "PASS",
@@ -68,7 +73,12 @@
     "plan_activation_duplicate_submission": "PASS",
     "plan_activation_orphan_records": "PASS",
     "plan_activation_concurrent_single_active": "PASS",
-    "goal_ready_with_gate_rejected_model_issue": "PASS"
+    "goal_ready_with_gate_rejected_model_issue": "PASS",
+    "goal_completion_ready_atomic_replay": "PASS",
+    "goal_clarification_request_atomic_transition": "PASS",
+    "goal_completion_fault_rollback": "PASS",
+    "goal_completion_task_version_fencing": "PASS",
+    "goal_clarification_downgrade_data_guard": "PASS"
   },
   "approved_implementation_inputs": {
     "sqlalchemy": "2.0.53",

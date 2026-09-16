@@ -14,6 +14,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from knowledge_system.infrastructure.persistence import (
     DatabaseEngineSettings,
+    GoalCompletionConflictError,
+    GoalCompletionWriteSet,
     PlanActivationConflictError,
     PlanActivationWriteSet,
     SqlAlchemyUnitOfWork,
@@ -30,6 +32,7 @@ from knowledge_system.infrastructure.persistence.planning_models import (
 from knowledge_system.infrastructure.persistence.task_models import (
     OutboxMessageRecord,
     TaskEventRecord,
+    UserInputRequestRecord,
 )
 
 TEST_DATABASE_URL = os.environ.get("KNOWLEDGE_TEST_DATABASE_URL")
@@ -56,6 +59,8 @@ def new_ids() -> dict[str, UUID]:
             "event",
             "event2",
             "outbox",
+            "outbox2",
+            "request",
         )
     }
 
@@ -293,6 +298,18 @@ def make_plan_attempt(ids: dict[str, UUID], *, plan_version: int) -> TaskAttempt
     )
 
 
+def make_goal_attempt(ids: dict[str, UUID], *, attempt_no: int) -> TaskAttemptRecord:
+    attempt = make_plan_attempt(ids, plan_version=1)
+    attempt.id = ids["goal_attempt"]
+    attempt.plan_version = None
+    attempt.attempt_kind = "GOAL_UNDERSTANDING"
+    attempt.attempt_no = attempt_no
+    attempt.pydantic_run_id = f"run-{ids['goal_attempt']}"
+    attempt.temporal_child_workflow_id = child_workflow_id(ids["task"], ids["goal_attempt"])
+    attempt.status = "COMPLETED"
+    return attempt
+
+
 def make_plan(
     ids: dict[str, UUID], *, plan_version: int, predecessor: int | None
 ) -> TaskPlanVersionRecord:
@@ -393,6 +410,88 @@ def make_outbox(ids: dict[str, UUID], *, event_key: str) -> OutboxMessageRecord:
     )
 
 
+def make_goal_event(
+    ids: dict[str, UUID], *, event_key: str, event_type: str, payload_digest: str = DIGEST
+) -> TaskEventRecord:
+    business_ref_id = (
+        ids["goal"] if event_type == "GOAL_UNDERSTANDING_COMPLETED" else ids["request"]
+    )
+    return TaskEventRecord(
+        id=ids[event_key],
+        task_id=ids["task"],
+        sequence=0,
+        event_type=event_type,
+        event_schema_version="task-event-v1",
+        workflow_relevant=True,
+        business_ref_type="GOAL"
+        if event_type == "GOAL_UNDERSTANDING_COMPLETED"
+        else "USER_INPUT_REQUEST",
+        business_ref_id=business_ref_id,
+        business_version=1,
+        observation_expected_count=0,
+        payload_json={},
+        payload_digest=payload_digest,
+    )
+
+
+def make_goal_outbox(
+    ids: dict[str, UUID], *, event_key: str, outbox_key: str
+) -> OutboxMessageRecord:
+    message = make_outbox(ids, event_key=event_key)
+    message.id = ids[outbox_key]
+    return message
+
+
+def make_goal_completion_write_set(
+    ids: dict[str, UUID], *, request_user_input: bool = False
+) -> GoalCompletionWriteSet:
+    goal = make_goal_understanding(ids)
+    completion_event = make_goal_event(
+        ids, event_key="event", event_type="GOAL_UNDERSTANDING_COMPLETED"
+    )
+    events = (completion_event,)
+    outbox = (make_goal_outbox(ids, event_key="event", outbox_key="outbox"),)
+    request = None
+    if request_user_input:
+        goal.gate_outcome = "REQUEST_USER_INPUT"
+        goal.blocking_issue_count = 1
+        request = UserInputRequestRecord(
+            id=ids["request"],
+            task_id=ids["task"],
+            input_id=ids["input"],
+            origin="GOAL_CLARIFICATION",
+            source_task_attempt_id=ids["goal_attempt"],
+            question_artifact_id=ids["artifact"],
+            input_schema_json={},
+            response_contract_version="clarification_response_contract_v1",
+            display_summary="需要补充信息",
+            status="PENDING",
+            response_artifact_id=None,
+            response_size_bytes=None,
+            goal_understanding_id=ids["goal"],
+            clarification_round_no=1,
+            resume_bundle_id=None,
+            deferred_call_id=None,
+            runtime_blocking_issue_id=None,
+            issue_fingerprint=None,
+            request_version=1,
+            row_version=1,
+            requested_at=datetime.now(UTC),
+            expires_at=datetime.now(UTC) + timedelta(minutes=30),
+            submitted_at=None,
+        )
+        request_event = make_goal_event(ids, event_key="event2", event_type="USER_INPUT_REQUESTED")
+        events = (completion_event, request_event)
+        outbox = (make_goal_outbox(ids, event_key="event2", outbox_key="outbox2"),)
+    return GoalCompletionWriteSet(
+        goal_understanding=goal,
+        expected_task_version=1,
+        user_input_request=request,
+        events=events,
+        outbox_messages=outbox,
+    )
+
+
 def make_plan_write_set(
     ids: dict[str, UUID],
     *,
@@ -429,6 +528,11 @@ class PostgresPlanActivationTests(unittest.IsolatedAsyncioTestCase):
     async def activate(self, write_set: PlanActivationWriteSet) -> None:
         async with SqlAlchemyUnitOfWork(self.session_factory) as unit_of_work:
             await unit_of_work.plans.activate_plan_version(write_set)
+            await unit_of_work.commit()
+
+    async def complete_goal(self, write_set: GoalCompletionWriteSet) -> None:
+        async with SqlAlchemyUnitOfWork(self.session_factory) as unit_of_work:
+            await unit_of_work.plans.complete_goal_understanding(write_set)
             await unit_of_work.commit()
 
     async def count_task(
@@ -506,6 +610,118 @@ class PostgresPlanActivationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(status, "RUNNING")
         self.assertEqual(last_sequence, 2)
         self.assertEqual(list(sequences), [1, 2])
+
+    async def test_ready_goal_completion_is_atomic_and_idempotent(self) -> None:
+        ids = new_ids()
+        await self.seed_all(ids)
+        write_set = make_goal_completion_write_set(ids)
+
+        await self.complete_goal(write_set)
+        await self.complete_goal(make_goal_completion_write_set(ids))
+
+        self.assertEqual(await self.count_task(ids, "workflow.task_goal_understanding"), 1)
+        self.assertEqual(await self.count_task(ids, "workflow.task_event"), 1)
+        async with self.engine.connect() as connection:
+            row = (
+                await connection.execute(
+                    text(
+                        "SELECT status,version,last_event_sequence FROM workflow.intelligent_task "
+                        "WHERE id=:task"
+                    ),
+                    {"task": ids["task"]},
+                )
+            ).one()
+        self.assertEqual(tuple(row), ("PLANNING", 2, 1))
+
+    async def test_goal_clarification_creates_request_and_waits(self) -> None:
+        ids = new_ids()
+        await self.seed_all(ids)
+
+        await self.complete_goal(make_goal_completion_write_set(ids, request_user_input=True))
+
+        self.assertEqual(await self.count_task(ids, "workflow.user_input_request"), 1)
+        self.assertEqual(await self.count_task(ids, "workflow.task_event"), 2)
+        async with self.engine.connect() as connection:
+            status = await connection.scalar(
+                text("SELECT status FROM workflow.intelligent_task WHERE id=:task"),
+                {"task": ids["task"]},
+            )
+        self.assertEqual(status, "WAITING_USER_INPUT")
+
+    async def test_goal_fault_rolls_back_request_events_and_task_transition(self) -> None:
+        ids = new_ids()
+        await self.seed_all(ids)
+        write_set = make_goal_completion_write_set(ids, request_user_input=True)
+        write_set.events[1].payload_digest = "Z" * 64
+
+        with self.assertRaises(IntegrityError):
+            await self.complete_goal(write_set)
+
+        for table in (
+            "workflow.task_goal_understanding",
+            "workflow.user_input_request",
+            "workflow.task_event",
+        ):
+            self.assertEqual(await self.count_task(ids, table), 0, table)
+        async with self.engine.connect() as connection:
+            row = (
+                await connection.execute(
+                    text(
+                        "SELECT status,version,last_event_sequence FROM workflow.intelligent_task "
+                        "WHERE id=:task"
+                    ),
+                    {"task": ids["task"]},
+                )
+            ).one()
+        self.assertEqual(tuple(row), ("PLANNING", 1, 0))
+
+    async def test_goal_stale_task_version_is_rejected_without_writes(self) -> None:
+        ids = new_ids()
+        await self.seed_all(ids)
+        write_set = make_goal_completion_write_set(ids)
+        stale = GoalCompletionWriteSet(
+            goal_understanding=write_set.goal_understanding,
+            expected_task_version=2,
+            events=write_set.events,
+            outbox_messages=write_set.outbox_messages,
+        )
+
+        with self.assertRaisesRegex(GoalCompletionConflictError, "GOAL_TASK_VERSION_CONFLICT"):
+            await self.complete_goal(stale)
+        self.assertEqual(await self.count_task(ids, "workflow.task_goal_understanding"), 0)
+
+    async def test_concurrent_goal_completion_has_single_version_winner(self) -> None:
+        ids = new_ids()
+        await self.seed_all(ids)
+        first = make_goal_completion_write_set(ids)
+        rival_ids = {
+            **ids,
+            "goal": uuid4(),
+            "goal_attempt": uuid4(),
+            "attempt": uuid4(),
+            "event": uuid4(),
+            "outbox": uuid4(),
+        }
+        second_base = make_goal_completion_write_set(rival_ids)
+        second = GoalCompletionWriteSet(
+            goal_understanding=second_base.goal_understanding,
+            expected_task_version=1,
+            task_attempt=make_goal_attempt(rival_ids, attempt_no=2),
+            events=second_base.events,
+            outbox_messages=second_base.outbox_messages,
+        )
+
+        results = await asyncio.gather(
+            self.complete_goal(first), self.complete_goal(second), return_exceptions=True
+        )
+        successes = [result for result in results if not isinstance(result, BaseException)]
+        conflicts = [
+            result for result in results if isinstance(result, GoalCompletionConflictError)
+        ]
+        self.assertEqual(len(successes), 1, results)
+        self.assertEqual(len(conflicts), 1, results)
+        self.assertEqual(await self.count_task(ids, "workflow.task_goal_understanding"), 1)
+        self.assertEqual(await self.count_task(ids, "workflow.task_event"), 1)
 
     async def test_rollback_fault_injection_leaves_no_orphan_records(self) -> None:
         ids = new_ids()

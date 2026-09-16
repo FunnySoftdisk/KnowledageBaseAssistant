@@ -8,6 +8,8 @@ from .base import Base
 from .engine import DatabaseEngineSettings, build_async_engine, build_session_factory
 from .identity import IdentityRepository
 from .planning import (
+    GoalCompletionConflictError,
+    GoalCompletionWriteSet,
     PlanActivationConflictError,
     PlanActivationWriteSet,
     PlanTransactionRepository,
@@ -31,6 +33,8 @@ from .unit_of_work import SqlAlchemyUnitOfWork, UnitOfWorkStateError
 __all__ = [
     "Base",
     "DatabaseEngineSettings",
+    "GoalCompletionConflictError",
+    "GoalCompletionWriteSet",
     "IdempotencyKeyReusedError",
     "IdentityRepository",
     "PersistenceContractError",

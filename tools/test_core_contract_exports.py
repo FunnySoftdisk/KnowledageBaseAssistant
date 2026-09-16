@@ -62,12 +62,12 @@ class CoreExportTests(unittest.TestCase):
         self.assertEqual(matrix["decision_status"], "ACCEPTED")
         self.assertEqual(
             matrix["implementation_stage"],
-            "DEV_01C_ATTEMPT_RUNTIME_DEPENDENCIES",
+            "DEV_01_GOAL_COMPLETION_AND_CLARIFICATION",
         )
         self.assertEqual(matrix["blocked_by"], [])
         self.assertEqual(matrix["orm_mapping_status"], "PARTIAL")
-        self.assertEqual(matrix["migration_pg_status"], "DEV_01C_ATTEMPT_RUNTIME_SCOPE_PASS")
-        self.assertEqual(matrix["latest_verification"]["revision"], "0003")
+        self.assertEqual(matrix["migration_pg_status"], "DEV_01_GOAL_COMPLETION_SCOPE_PASS")
+        self.assertEqual(matrix["latest_verification"]["revision"], "0004")
         self.assertEqual(matrix["latest_verification"]["alembic_schema_drift"], "NONE")
         self.assertEqual(
             matrix["latest_verification"]["task_creation_repository_uow"],
@@ -81,6 +81,11 @@ class CoreExportTests(unittest.TestCase):
             matrix["latest_verification"]["plan_activation_concurrent_single_active"],
             "PASS",
         )
+        self.assertEqual(
+            matrix["latest_verification"]["goal_completion_task_version_fencing"],
+            "PASS",
+        )
+        self.assertIn("workflow.user_input_request", matrix["implemented_orm_tables"])
         self.assertIn(
             "workflow.intelligent_task.authorization_ref_id",
             matrix["deferred_foreign_keys"],

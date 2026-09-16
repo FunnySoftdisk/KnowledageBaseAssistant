@@ -53,6 +53,12 @@ class PublicSnapshotTests(unittest.TestCase):
                     output / "server/migrations/versions/0002_goal_plan_persistence.py"
                 ).is_file()
             )
+            self.assertTrue(
+                (
+                    output
+                    / "server/migrations/versions/0004_goal_clarification_request.py"
+                ).is_file()
+            )
             self.assertTrue((output / "contracts/core/manifest.json").is_file())
             self.assertFalse((output / "docs").exists())
             self.assertFalse((output / "deploy").exists())

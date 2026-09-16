@@ -18,7 +18,12 @@ from .planning_models import (
     TaskPlanVersionRecord,
 )
 from .repositories import PersistenceContractError, TaskNotFoundError
-from .task_models import IntelligentTaskRecord, OutboxMessageRecord, TaskEventRecord
+from .task_models import (
+    IntelligentTaskRecord,
+    OutboxMessageRecord,
+    TaskEventRecord,
+    UserInputRequestRecord,
+)
 
 type _PlanChildRow = (
     TaskPlanItemDefinitionRecord
@@ -30,6 +35,79 @@ type _PlanChildRow = (
 
 class PlanActivationConflictError(RuntimeError):
     """并发激活或前置Plan指针不匹配。"""
+
+
+class GoalCompletionConflictError(RuntimeError):
+    """Goal提交遇到Task/Input/Attempt版本漂移。"""
+
+
+@dataclass(frozen=True, slots=True)
+class GoalCompletionWriteSet:
+    """Goal Attempt结果、Gate决定、可选澄清请求及通知的原子写集。"""
+
+    goal_understanding: TaskGoalUnderstandingRecord
+    expected_task_version: int
+    task_attempt: TaskAttemptRecord | None = None
+    user_input_request: UserInputRequestRecord | None = None
+    events: tuple[TaskEventRecord, ...] = ()
+    outbox_messages: tuple[OutboxMessageRecord, ...] = ()
+
+    def validate_relations(self) -> None:
+        goal = self.goal_understanding
+        if self.expected_task_version < 1:
+            raise PersistenceContractError("GOAL_EXPECTED_TASK_VERSION_INVALID")
+        if self.task_attempt is not None:
+            attempt = self.task_attempt
+            if attempt.id != goal.task_attempt_id:
+                raise PersistenceContractError("GOAL_ATTEMPT_ID_MISMATCH")
+            if attempt.task_id != goal.task_id or attempt.input_id != goal.input_id:
+                raise PersistenceContractError("GOAL_ATTEMPT_SCOPE_MISMATCH")
+            if attempt.attempt_kind != "GOAL_UNDERSTANDING" or attempt.plan_version is not None:
+                raise PersistenceContractError("GOAL_ATTEMPT_KIND_INVALID")
+            if attempt.status != "COMPLETED":
+                raise PersistenceContractError("GOAL_ATTEMPT_NOT_COMPLETED")
+        request = self.user_input_request
+        if goal.gate_outcome == "READY_TO_PLAN":
+            if request is not None:
+                raise PersistenceContractError("GOAL_READY_REQUEST_FORBIDDEN")
+        elif goal.gate_outcome == "REQUEST_USER_INPUT":
+            if request is None:
+                raise PersistenceContractError("GOAL_CLARIFICATION_REQUEST_REQUIRED")
+            if (
+                request.task_id != goal.task_id
+                or request.input_id != goal.input_id
+                or request.source_task_attempt_id != goal.task_attempt_id
+                or request.goal_understanding_id != goal.understanding_id
+            ):
+                raise PersistenceContractError("GOAL_REQUEST_SCOPE_MISMATCH")
+            if request.origin != "GOAL_CLARIFICATION" or request.status != "PENDING":
+                raise PersistenceContractError("GOAL_REQUEST_STATE_INVALID")
+        else:
+            raise PersistenceContractError("GOAL_GATE_OUTCOME_INVALID")
+        event_ids = [event.id for event in self.events]
+        if len(event_ids) != len(set(event_ids)):
+            raise PersistenceContractError("GOAL_EVENT_ID_DUPLICATE")
+        for event in self.events:
+            if event.task_id != goal.task_id:
+                raise PersistenceContractError("GOAL_EVENT_TASK_MISMATCH")
+        if not any(event.event_type == "GOAL_UNDERSTANDING_COMPLETED" for event in self.events):
+            raise PersistenceContractError("GOAL_COMPLETION_EVENT_REQUIRED")
+        if goal.gate_outcome == "REQUEST_USER_INPUT" and not any(
+            event.event_type == "USER_INPUT_REQUESTED" for event in self.events
+        ):
+            raise PersistenceContractError("GOAL_USER_INPUT_EVENT_REQUIRED")
+        allowed_event_ids = set(event_ids)
+        outbox_keys: list[tuple[UUID, str]] = []
+        for message in self.outbox_messages:
+            if message.event_id not in allowed_event_ids:
+                raise PersistenceContractError("GOAL_OUTBOX_EVENT_UNKNOWN")
+            if message.aggregate_id != goal.task_id:
+                raise PersistenceContractError("GOAL_OUTBOX_TASK_MISMATCH")
+            outbox_keys.append((message.event_id, message.destination))
+        if len(outbox_keys) != len(set(outbox_keys)):
+            raise PersistenceContractError("GOAL_OUTBOX_DUPLICATE")
+        if not self.outbox_messages:
+            raise PersistenceContractError("GOAL_OUTBOX_REQUIRED")
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,6 +197,117 @@ class PlanTransactionRepository:
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+
+    async def complete_goal_understanding(self, write_set: GoalCompletionWriteSet) -> None:
+        """按Task版本栅栏提交Goal；澄清分支同时创建Request并进入等待态。"""
+
+        write_set.validate_relations()
+        goal = write_set.goal_understanding
+        task = await self.get_task_for_update(goal.task_id)
+        if task is None:
+            raise TaskNotFoundError("TASK_NOT_FOUND")
+
+        existing = await self._session.scalar(
+            select(TaskGoalUnderstandingRecord).where(
+                TaskGoalUnderstandingRecord.task_id == goal.task_id,
+                TaskGoalUnderstandingRecord.input_id == goal.input_id,
+                TaskGoalUnderstandingRecord.task_attempt_id == goal.task_attempt_id,
+            )
+        )
+        if existing is not None:
+            if (
+                existing.understanding_digest == goal.understanding_digest
+                and existing.gate_digest == goal.gate_digest
+                and existing.gate_outcome == goal.gate_outcome
+            ):
+                return
+            raise GoalCompletionConflictError("GOAL_COMPLETION_REPLAY_CONFLICT")
+        duplicate_id = await self._session.get(TaskGoalUnderstandingRecord, goal.understanding_id)
+        if duplicate_id is not None:
+            raise GoalCompletionConflictError("GOAL_COMPLETION_REPLAY_CONFLICT")
+
+        if task.status != "PLANNING":
+            raise GoalCompletionConflictError("GOAL_TASK_STATUS_CONFLICT")
+        if task.current_input_id != goal.input_id:
+            raise GoalCompletionConflictError("GOAL_INPUT_CONFLICT")
+        if task.active_plan_version is not None:
+            raise GoalCompletionConflictError("GOAL_ACTIVE_PLAN_CONFLICT")
+        if task.version != write_set.expected_task_version:
+            raise GoalCompletionConflictError("GOAL_TASK_VERSION_CONFLICT")
+
+        attempt = write_set.task_attempt
+        if attempt is None:
+            attempt = await self._session.get(TaskAttemptRecord, goal.task_attempt_id)
+        if (
+            attempt is None
+            or attempt.task_id != goal.task_id
+            or attempt.input_id != goal.input_id
+            or attempt.attempt_kind != "GOAL_UNDERSTANDING"
+            or attempt.plan_version is not None
+            or attempt.status != "COMPLETED"
+        ):
+            raise GoalCompletionConflictError("GOAL_ATTEMPT_CONFLICT")
+
+        request = write_set.user_input_request
+        if request is not None:
+            if request.requested_at >= request.expires_at or request.expires_at > task.deadline_at:
+                raise GoalCompletionConflictError("GOAL_REQUEST_DEADLINE_CONFLICT")
+            clarification_count = await self._session.scalar(
+                select(func.count())
+                .select_from(UserInputRequestRecord)
+                .where(
+                    UserInputRequestRecord.task_id == goal.task_id,
+                    UserInputRequestRecord.origin == "GOAL_CLARIFICATION",
+                )
+            )
+            if (
+                clarification_count is None
+                or clarification_count >= 2
+                or request.clarification_round_no != clarification_count + 1
+            ):
+                raise GoalCompletionConflictError("GOAL_CLARIFICATION_ROUND_CONFLICT")
+
+        if write_set.task_attempt is not None:
+            self._session.add(write_set.task_attempt)
+            await self._session.flush((write_set.task_attempt,))
+        self._session.add(goal)
+        await self._session.flush((goal,))
+        if request is not None:
+            self._session.add(request)
+            await self._session.flush((request,))
+
+        next_sequence = task.last_event_sequence + 1
+        for event in write_set.events:
+            event.sequence = next_sequence
+            next_sequence += 1
+        self._session.add_all(write_set.events)
+        await self._session.flush(write_set.events)
+        self._session.add_all(write_set.outbox_messages)
+        await self._session.flush(write_set.outbox_messages)
+
+        target_status = (
+            "WAITING_USER_INPUT" if goal.gate_outcome == "REQUEST_USER_INPUT" else "PLANNING"
+        )
+        statement = (
+            update(IntelligentTaskRecord)
+            .where(
+                IntelligentTaskRecord.id == goal.task_id,
+                IntelligentTaskRecord.status == "PLANNING",
+                IntelligentTaskRecord.current_input_id == goal.input_id,
+                IntelligentTaskRecord.active_plan_version.is_(None),
+                IntelligentTaskRecord.version == write_set.expected_task_version,
+                IntelligentTaskRecord.deadline_at > func.now(),
+            )
+            .values(
+                status=target_status,
+                last_event_sequence=task.last_event_sequence + len(write_set.events),
+                version=IntelligentTaskRecord.version + 1,
+            )
+            .returning(IntelligentTaskRecord.id)
+        )
+        result = await self._session.execute(statement)
+        if result.scalar_one_or_none() is None:
+            raise GoalCompletionConflictError("GOAL_COMPLETION_CAS_CONFLICT")
 
     async def activate_plan_version(self, write_set: PlanActivationWriteSet) -> None:
         """锁Task后按FK顺序原子写Attempt/Goal/Plan/定义/运行/Event/Outbox，并以CAS切换唯一Active指针。"""
