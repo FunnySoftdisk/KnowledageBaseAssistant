@@ -29,6 +29,8 @@ from knowledge_system.infrastructure.persistence.task_models import (
     TaskEventRecord,
     TaskInputSnapshotRecord,
 )
+from knowledge_system.modules.audit.domain.audit_event import AuditEventDraft, AuditResult
+from knowledge_system.modules.audit.public import AuditService
 
 TEST_DATABASE_URL = os.environ.get("KNOWLEDGE_TEST_DATABASE_URL")
 DIGEST = "a" * 64
@@ -203,6 +205,24 @@ def make_write_set(
         response_digest=DIGEST,
         expires_at=now + timedelta(days=1),
     )
+    audit_event = AuditEventDraft(
+        event_id=uuid4(),
+        occurred_at=now,
+        actor_id=ids["user"],
+        actor_role_snapshot=(),
+        session_id=None,
+        source_ip=None,
+        device_id=None,
+        action="TASK_CREATE",
+        resource_type="TASK",
+        resource_id=str(ids["task"]),
+        result=AuditResult.SUCCESS.value,
+        reason_code=None,
+        before_digest=None,
+        after_digest=None,
+        details_json=None,
+        trace_id="a" * 32,
+    )
     return TaskCreationWriteSet(
         task=task,
         query_message=message,
@@ -211,6 +231,7 @@ def make_write_set(
         task_created_event=event,
         starter_outbox=outbox,
         idempotency=idempotency,
+        audit_event=audit_event,
     )
 
 
@@ -225,7 +246,10 @@ class PostgresTaskUnitOfWorkTests(unittest.IsolatedAsyncioTestCase):
         await self.engine.dispose()
 
     def service(self) -> TaskCreationTransactionService:
-        return TaskCreationTransactionService(lambda: SqlAlchemyUnitOfWork(self.session_factory))
+        return TaskCreationTransactionService(
+            lambda: SqlAlchemyUnitOfWork(self.session_factory),
+            AuditService(),
+        )
 
     async def test_create_replay_and_conflicting_request_hash(self) -> None:
         ids = new_ids()

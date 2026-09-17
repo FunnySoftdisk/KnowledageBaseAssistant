@@ -21,8 +21,10 @@ EXACT_FILES = frozenset(
         "server/uv.lock",
         "tools/build_public_snapshot.py",
         "tools/core_contract_exports.py",
+        "tools/reconcile_legacy_goal_plan.py",
         "tools/test_core_contract_exports.py",
         "tools/test_public_snapshot.py",
+        "tools/test_reconcile_legacy_goal_plan.py",
     }
 )
 PREFIXES = (

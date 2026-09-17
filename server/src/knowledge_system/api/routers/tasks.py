@@ -66,7 +66,12 @@ async def create_task(
         ) from error
     except ValueError as error:
         raise RequestParseError(str(error)) from error
-    result = await service.create(parsed, subject, idempotency_key=idempotency_key)
+    result = await service.create(
+        parsed,
+        subject,
+        idempotency_key=idempotency_key,
+        trace_id=request.state.trace_id,
+    )
     return _to_create_response(result)
 
 

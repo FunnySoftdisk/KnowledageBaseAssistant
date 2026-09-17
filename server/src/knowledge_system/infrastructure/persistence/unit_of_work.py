@@ -6,6 +6,7 @@ from types import TracebackType
 
 from sqlalchemy.ext.asyncio import AsyncSession, AsyncSessionTransaction, async_sessionmaker
 
+from .audit_repository import AuditRepository
 from .planning import PlanTransactionRepository
 from .repositories import TaskTransactionRepository
 
@@ -23,6 +24,7 @@ class SqlAlchemyUnitOfWork:
         self._transaction: AsyncSessionTransaction | None = None
         self._tasks: TaskTransactionRepository | None = None
         self._plans: PlanTransactionRepository | None = None
+        self._audit: AuditRepository | None = None
 
     @property
     def session(self) -> AsyncSession:
@@ -42,6 +44,12 @@ class SqlAlchemyUnitOfWork:
             raise UnitOfWorkStateError("UNIT_OF_WORK_NOT_ENTERED")
         return self._plans
 
+    @property
+    def audit(self) -> AuditRepository:
+        if self._audit is None:
+            raise UnitOfWorkStateError("UNIT_OF_WORK_NOT_ENTERED")
+        return self._audit
+
     async def __aenter__(self) -> SqlAlchemyUnitOfWork:
         if self._session is not None:
             raise UnitOfWorkStateError("UNIT_OF_WORK_ALREADY_ENTERED")
@@ -49,6 +57,7 @@ class SqlAlchemyUnitOfWork:
         self._transaction = await self._session.begin()
         self._tasks = TaskTransactionRepository(self._session)
         self._plans = PlanTransactionRepository(self._session)
+        self._audit = AuditRepository(self._session)
         return self
 
     async def commit(self) -> None:
@@ -77,6 +86,7 @@ class SqlAlchemyUnitOfWork:
             self._transaction = None
             self._tasks = None
             self._plans = None
+            self._audit = None
 
     def _active_transaction(self) -> AsyncSessionTransaction:
         if self._transaction is None or not self._transaction.is_active:

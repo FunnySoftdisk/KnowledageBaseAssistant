@@ -9,6 +9,8 @@ from uuid import UUID
 from sqlalchemy import Select, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from knowledge_system.modules.audit.domain.audit_event import AuditEventDraft
+
 from .foundation_models import ArtifactRecord
 from .task_models import (
     ConversationMessageRecord,
@@ -42,6 +44,8 @@ class TaskCreationWriteSet:
     task_created_event: TaskEventRecord
     starter_outbox: OutboxMessageRecord
     idempotency: IdempotencyRecord
+    # Task创建审计与Task/Message/Event/Outbox同事务追加，失败关闭整体回滚。
+    audit_event: AuditEventDraft
     # USER_QUERY正文Artifact与Task/Message同事务写入，避免失败后留下孤立Artifact。
     query_artifact: ArtifactRecord | None = None
 
@@ -80,6 +84,12 @@ class TaskCreationWriteSet:
             raise PersistenceContractError("TASK_IDEMPOTENCY_NOT_COMPLETED")
         if self.idempotency.resource_type != "TASK" or self.idempotency.resource_id != task_id:
             raise PersistenceContractError("TASK_IDEMPOTENCY_RESOURCE_MISMATCH")
+        if (
+            self.audit_event.resource_type != "TASK"
+            or self.audit_event.resource_id != str(task_id)
+            or self.audit_event.result != "SUCCESS"
+        ):
+            raise PersistenceContractError("TASK_AUDIT_RESOURCE_MISMATCH")
 
 
 class TaskTransactionRepository:

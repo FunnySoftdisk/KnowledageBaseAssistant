@@ -8,10 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from knowledge_system.infrastructure.persistence import (
     IdentityRepository,
+    SqlAlchemyAuditWriter,
     SqlAlchemyUnitOfWork,
     TaskCreationTransactionService,
     TaskReadRepository,
 )
+from knowledge_system.modules.audit.public import AuditService
 from knowledge_system.modules.iam.public import (
     AccessTokenService,
     Argon2PasswordHasher,
@@ -40,12 +42,17 @@ class AppRuntime:
             self.token_service,
             IdentityRepository(session),
             Argon2PasswordHasher(),
+            audit_writer=SqlAlchemyAuditWriter(
+                lambda: SqlAlchemyUnitOfWork(self.session_factory),
+                AuditService(),
+            ),
         )
 
     def task_creation_service(self, session: AsyncSession) -> TaskCreationService:
         return TaskCreationService(
             TaskCreationTransactionService(
-                lambda: SqlAlchemyUnitOfWork(self.session_factory)
+                lambda: SqlAlchemyUnitOfWork(self.session_factory),
+                AuditService(),
             ),
             TaskReadRepository(session),
             self.idempotency_hmac_secret,

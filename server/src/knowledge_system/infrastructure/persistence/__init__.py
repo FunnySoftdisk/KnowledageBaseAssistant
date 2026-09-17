@@ -1,9 +1,12 @@
 """PostgreSQL持久化公共入口。"""
 
 from . import attempt_models as attempt_models
+from . import audit_models as audit_models
 from . import foundation_models as foundation_models
 from . import planning_models as planning_models
 from . import task_models as task_models
+from .audit_repository import AuditChainError, AuditRepository
+from .audit_writer import SqlAlchemyAuditWriter
 from .base import Base
 from .engine import DatabaseEngineSettings, build_async_engine, build_session_factory
 from .identity import IdentityRepository
@@ -32,6 +35,8 @@ from .task_read import TaskReadRepository
 from .unit_of_work import SqlAlchemyUnitOfWork, UnitOfWorkStateError
 
 __all__ = [
+    "AuditChainError",
+    "AuditRepository",
     "Base",
     "DatabaseEngineSettings",
     "GoalCompletionConflictError",
@@ -43,6 +48,7 @@ __all__ = [
     "PlanActivationWriteSet",
     "PlanAttemptCompletion",
     "PlanTransactionRepository",
+    "SqlAlchemyAuditWriter",
     "SqlAlchemyUnitOfWork",
     "TaskCreationWriteSet",
     "TaskCreationDisposition",
@@ -56,6 +62,7 @@ __all__ = [
     "build_async_engine",
     "build_session_factory",
     "attempt_models",
+    "audit_models",
     "foundation_models",
     "planning_models",
     "task_models",

@@ -9,6 +9,8 @@ from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
 
+from knowledge_system.modules.audit.public import AuditService
+
 from .repositories import TaskCreationWriteSet
 from .task_models import IdempotencyRecord
 from .unit_of_work import SqlAlchemyUnitOfWork
@@ -49,10 +51,15 @@ class _IdempotencySnapshot:
 
 
 class TaskCreationTransactionService:
-    """提交Task/Message/Input/Event/Outbox/Idempotency的单一事务。"""
+    """提交Task/Message/Input/Event/Outbox/Idempotency/审计的单一事务。"""
 
-    def __init__(self, unit_of_work_factory: Callable[[], SqlAlchemyUnitOfWork]) -> None:
+    def __init__(
+        self,
+        unit_of_work_factory: Callable[[], SqlAlchemyUnitOfWork],
+        audit: AuditService,
+    ) -> None:
         self._unit_of_work_factory = unit_of_work_factory
+        self._audit = audit
 
     async def execute(self, write_set: TaskCreationWriteSet) -> TaskCreationTransactionResult:
         write_set.validate_relations()
@@ -64,6 +71,7 @@ class TaskCreationTransactionService:
             async with self._unit_of_work_factory() as unit_of_work:
                 await unit_of_work.tasks.add_task_creation(write_set)
                 await unit_of_work.tasks.flush()
+                await self._audit.append(write_set.audit_event, unit_of_work)
                 await unit_of_work.commit()
         except IntegrityError as error:
             # 并发首写的败者必须回读已提交幂等行；不能盲目当成重放。

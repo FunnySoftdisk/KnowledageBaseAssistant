@@ -11,6 +11,7 @@
 - `server/migrations/`下的数据库迁移链；
 - `contracts/core/`下由公开源码生成的核心机器契约；
 - `tools/core_contract_exports.py`及其测试；
+- `tools/reconcile_legacy_goal_plan.py`及其测试；
 - `tools/build_public_snapshot.py`及其测试；
 - 本公开范围说明。
 

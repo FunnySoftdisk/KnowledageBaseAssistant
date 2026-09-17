@@ -2,11 +2,13 @@
   "contract_version": "core_field_matrix_v1",
   "decision_ref": "CORE-01..CORE-40;DEV-00-BATCH-01",
   "decision_status": "ACCEPTED",
-  "implementation_stage": "DEV_01_GOAL_COMPLETION_AND_CLARIFICATION",
-  "orm_mapping_status": "PARTIAL",
-  "migration_pg_status": "DEV_01_GOAL_COMPLETION_SCOPE_PASS",
+  "implementation_stage": "DEV_02_AUDIT_CHAIN",
+  "orm_mapping_status": "COMPLETE",
+  "migration_pg_status": "DEV_02_AUDIT_PASS",
   "blocked_by": [],
   "implemented_orm_tables": [
+    "audit.audit_event",
+    "audit.audit_chain_head",
     "iam.organization",
     "iam.user_account",
     "content.artifact",
@@ -52,7 +54,7 @@
     "workflow.user_input_request.runtime_blocking_issue_id": "runtime_blocking_issue projection belongs to the runtime controller package"
   },
   "latest_verification": {
-    "revision": "0004",
+    "revision": "0005",
     "postgresql": "16",
     "upgrade_from_empty": "PASS",
     "downgrade_to_base": "PASS",
@@ -60,7 +62,8 @@
     "goal_plan_tables_round_trip": "PASS",
     "attempt_runtime_tables_round_trip": "PASS",
     "goal_clarification_table_round_trip": "PASS",
-    "postgres_integration_tests": "21 passed",
+    "audit_chain_table_round_trip": "PASS",
+    "postgres_integration_tests": "22 passed",
     "task_transaction_integration_tests": "5 passed",
     "task_creation_repository_uow": "PASS",
     "idempotency_replay_and_hash_conflict": "PASS",
@@ -81,7 +84,15 @@
     "goal_clarification_request_atomic_transition": "PASS",
     "goal_completion_fault_rollback": "PASS",
     "goal_completion_task_version_fencing": "PASS",
-    "goal_clarification_downgrade_data_guard": "PASS"
+    "goal_clarification_downgrade_data_guard": "PASS",
+    "field_matrix_column_audit": "PASS",
+    "legacy_goal_plan_reconciliation": "PASS",
+    "legacy_goal_plan_0002_to_head_upgrade": "PASS",
+    "audit_chain_append_hash_linked": "PASS",
+    "audit_chain_immutability": "PASS",
+    "audit_task_creation_atomic": "PASS",
+    "audit_login_success_and_failure": "PASS",
+    "audit_chain_integration_tests": "7 passed"
   },
   "approved_implementation_inputs": {
     "sqlalchemy": "2.0.53",
@@ -114,11 +125,62 @@
     }
   },
   "closed_table_projections": {
+    "audit.audit_event": [
+      "event_id",
+      "occurred_at",
+      "actor_id",
+      "actor_role_snapshot",
+      "session_id",
+      "source_ip",
+      "device_id",
+      "action",
+      "resource_type",
+      "resource_id",
+      "result",
+      "reason_code",
+      "before_digest",
+      "after_digest",
+      "details_json",
+      "trace_id",
+      "previous_hash",
+      "event_hash"
+    ],
+    "audit.audit_chain_head": [
+      "chain_key",
+      "head_hash"
+    ],
     "iam.organization": [
       "id",
       "name",
       "status",
       "version",
+      "created_at",
+      "updated_at"
+    ],
+    "iam.user_account": [
+      "id",
+      "organization_id",
+      "username",
+      "normalized_username",
+      "display_name",
+      "password_hash",
+      "status",
+      "must_change_password",
+      "failed_login_count",
+      "locked_until",
+      "credential_version",
+      "version",
+      "created_at",
+      "updated_at"
+    ],
+    "workflow.conversation": [
+      "id",
+      "owner_id",
+      "organization_id",
+      "title",
+      "mode",
+      "conversation_memory_version",
+      "memory_policy",
       "created_at",
       "updated_at"
     ],

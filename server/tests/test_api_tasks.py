@@ -190,6 +190,10 @@ class TaskCreateRouteTests(unittest.TestCase):
         self.assertIsNone(body["active_plan_version"])
         self.assertTrue(resp.headers["X-Request-Id"])
         self.assertTrue(resp.headers["X-Trace-Id"])
+        self.assertEqual(
+            tx.write_set.audit_event.trace_id,
+            resp.headers["X-Trace-Id"],
+        )
 
     def test_create_replay_returns_committed_task_id(self) -> None:
         subject = make_subject()

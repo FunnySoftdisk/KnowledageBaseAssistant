@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from datetime import UTC, datetime
 from typing import Self
 from uuid import uuid4
 
@@ -21,6 +22,8 @@ from knowledge_system.infrastructure.persistence.task_models import (
     TaskEventRecord,
     TaskInputSnapshotRecord,
 )
+from knowledge_system.modules.audit.domain.audit_event import AuditEventDraft, AuditResult
+from knowledge_system.modules.audit.public import AuditService
 
 
 def make_write_set(*, request_hash: str = "b" * 64) -> TaskCreationWriteSet:
@@ -62,6 +65,24 @@ def make_write_set(*, request_hash: str = "b" * 64) -> TaskCreationWriteSet:
         response_body_json={"task_id": str(task_id), "status": "QUEUED"},
         response_digest="c" * 64,
     )
+    audit_event = AuditEventDraft(
+        event_id=uuid4(),
+        occurred_at=datetime.now(UTC),
+        actor_id=actor_id,
+        actor_role_snapshot=(),
+        session_id=None,
+        source_ip=None,
+        device_id=None,
+        action="TASK_CREATE",
+        resource_type="TASK",
+        resource_id=str(task_id),
+        result=AuditResult.SUCCESS.value,
+        reason_code=None,
+        before_digest=None,
+        after_digest=None,
+        details_json=None,
+        trace_id="a" * 32,
+    )
     return TaskCreationWriteSet(
         task=task,
         query_message=message,
@@ -70,6 +91,7 @@ def make_write_set(*, request_hash: str = "b" * 64) -> TaskCreationWriteSet:
         task_created_event=event,
         starter_outbox=outbox,
         idempotency=idempotency,
+        audit_event=audit_event,
     )
 
 
@@ -90,9 +112,18 @@ class FakeTaskRepository:
         self.flushed = True
 
 
+class FakeAuditRepository:
+    def __init__(self) -> None:
+        self.appended: list[AuditEventDraft] = []
+
+    async def append(self, draft: AuditEventDraft) -> None:
+        self.appended.append(draft)
+
+
 class FakeUnitOfWork:
     def __init__(self, repository: FakeTaskRepository) -> None:
         self.tasks = repository
+        self.audit = FakeAuditRepository()
         self.committed = False
 
     async def __aenter__(self) -> Self:
@@ -135,18 +166,19 @@ class TaskCreationTransactionServiceTests(unittest.IsolatedAsyncioTestCase):
             units.append(unit)
             return unit
 
-        service = TaskCreationTransactionService(factory)  # type: ignore[arg-type]
+        service = TaskCreationTransactionService(factory, AuditService())  # type: ignore[arg-type]
         result = await service.execute(write_set)
         self.assertEqual(result.disposition, TaskCreationDisposition.CREATED)
         self.assertTrue(repositories[1].added)
         self.assertTrue(repositories[1].flushed)
         self.assertTrue(units[1].committed)
+        self.assertEqual(len(units[1].audit.appended), 1)
 
     async def test_same_request_is_replayed_without_new_write(self) -> None:
         write_set = make_write_set()
         repository = FakeTaskRepository(write_set.idempotency)
         unit = FakeUnitOfWork(repository)
-        service = TaskCreationTransactionService(lambda: unit)  # type: ignore[arg-type]
+        service = TaskCreationTransactionService(lambda: unit, AuditService())  # type: ignore[arg-type]
         result = await service.execute(write_set)
         self.assertEqual(result.disposition, TaskCreationDisposition.REPLAYED)
         self.assertEqual(result.task_id, write_set.task.id)
@@ -161,7 +193,8 @@ class TaskCreationTransactionServiceTests(unittest.IsolatedAsyncioTestCase):
         existing.key_digest = write_set.idempotency.key_digest
         repository = FakeTaskRepository(existing)
         service = TaskCreationTransactionService(  # type: ignore[arg-type]
-            lambda: FakeUnitOfWork(repository)
+            lambda: FakeUnitOfWork(repository),
+            AuditService(),
         )
         with self.assertRaisesRegex(IdempotencyKeyReusedError, "IDEMPOTENCY_KEY_REUSED"):
             await service.execute(write_set)

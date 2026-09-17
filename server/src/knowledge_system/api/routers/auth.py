@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from knowledge_system.modules.iam.public import AuthenticationService, Subject
 
@@ -16,10 +16,15 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 @router.post("/login", response_model=LoginResponse)
 async def login(
+    request: Request,
     body: LoginRequest,
     service: Annotated[AuthenticationService, Depends(get_authentication_service)],
 ) -> LoginResponse:
-    result = await service.login(body.username, body.password)
+    result = await service.login(
+        body.username,
+        body.password,
+        trace_id=request.state.trace_id,
+    )
     return LoginResponse(
         access_token=result.access_token,
         token_type="Bearer",

@@ -29,6 +29,7 @@ from knowledge_system.infrastructure.persistence.task_models import (
     TaskEventRecord,
     TaskInputSnapshotRecord,
 )
+from knowledge_system.modules.audit.public import AuditEventDraft, AuditResult
 from knowledge_system.modules.iam.domain.subject import Subject
 from knowledge_system.modules.tasking.domain.core_types import (
     ArtifactRefV1,
@@ -106,6 +107,7 @@ class TaskCreationService:
         subject: Subject,
         *,
         idempotency_key: str,
+        trace_id: str | None = None,
     ) -> CreateTaskResult:
         conversation = await self._entry.load_conversation(
             request.conversation_id, subject.user_id
@@ -122,6 +124,8 @@ class TaskCreationService:
         outbox_id = uuid4()
         idempotency_id = uuid4()
         query_artifact_id = uuid4()
+        audit_event_id = uuid4()
+        audit_trace_id = trace_id or uuid4().hex
 
         attachment_bindings, binding_refs = await self._build_attachments(
             request, subject, task_id, message_id
@@ -228,6 +232,24 @@ class TaskCreationService:
             response_digest=canonical_json_sha256(response_body),
             expires_at=now + timedelta(hours=DEFAULT_IDEMPOTENCY_TTL_HOURS),
         )
+        audit_event = AuditEventDraft(
+            event_id=audit_event_id,
+            occurred_at=now,
+            actor_id=subject.user_id,
+            actor_role_snapshot=(),
+            session_id=subject.session_id,
+            source_ip=None,
+            device_id=None,
+            action="TASK_CREATE",
+            resource_type="TASK",
+            resource_id=str(task_id),
+            result=AuditResult.SUCCESS.value,
+            reason_code=None,
+            before_digest=None,
+            after_digest=None,
+            details_json=None,
+            trace_id=audit_trace_id,
+        )
         write_set = TaskCreationWriteSet(
             task=task,
             query_message=message,
@@ -236,6 +258,7 @@ class TaskCreationService:
             task_created_event=event,
             starter_outbox=outbox,
             idempotency=idempotency,
+            audit_event=audit_event,
             query_artifact=query_artifact,
         )
         result = await self._transaction_service.execute(write_set)

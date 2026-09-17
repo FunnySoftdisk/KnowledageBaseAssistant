@@ -62,15 +62,26 @@ class CoreExportTests(unittest.TestCase):
         self.assertEqual(matrix["decision_status"], "ACCEPTED")
         self.assertEqual(
             matrix["implementation_stage"],
-            "DEV_01_GOAL_COMPLETION_AND_CLARIFICATION",
+            "DEV_02_AUDIT_CHAIN",
         )
         self.assertEqual(matrix["blocked_by"], [])
-        self.assertEqual(matrix["orm_mapping_status"], "PARTIAL")
-        self.assertEqual(
-            matrix["migration_pg_status"], "DEV_01_GOAL_COMPLETION_SCOPE_PASS"
-        )
-        self.assertEqual(matrix["latest_verification"]["revision"], "0004")
+        self.assertEqual(matrix["orm_mapping_status"], "COMPLETE")
+        self.assertEqual(matrix["migration_pg_status"], "DEV_02_AUDIT_PASS")
+        self.assertEqual(matrix["latest_verification"]["revision"], "0005")
         self.assertEqual(matrix["latest_verification"]["alembic_schema_drift"], "NONE")
+        self.assertEqual(
+            matrix["latest_verification"]["postgres_integration_tests"], "22 passed"
+        )
+        self.assertEqual(
+            matrix["latest_verification"]["field_matrix_column_audit"], "PASS"
+        )
+        self.assertEqual(
+            matrix["latest_verification"]["legacy_goal_plan_reconciliation"], "PASS"
+        )
+        self.assertEqual(
+            matrix["latest_verification"]["legacy_goal_plan_0002_to_head_upgrade"],
+            "PASS",
+        )
         self.assertEqual(
             matrix["latest_verification"]["task_creation_repository_uow"],
             "PASS",
@@ -92,6 +103,19 @@ class CoreExportTests(unittest.TestCase):
             "PASS",
         )
         self.assertIn("workflow.user_input_request", matrix["implemented_orm_tables"])
+        self.assertIn("audit.audit_event", matrix["implemented_orm_tables"])
+        self.assertEqual(
+            matrix["latest_verification"]["audit_chain_table_round_trip"], "PASS"
+        )
+        self.assertEqual(
+            matrix["latest_verification"]["audit_chain_append_hash_linked"], "PASS"
+        )
+        self.assertEqual(
+            matrix["latest_verification"]["audit_chain_immutability"], "PASS"
+        )
+        self.assertEqual(
+            matrix["latest_verification"]["audit_task_creation_atomic"], "PASS"
+        )
         self.assertIn(
             "workflow.intelligent_task.authorization_ref_id",
             matrix["deferred_foreign_keys"],

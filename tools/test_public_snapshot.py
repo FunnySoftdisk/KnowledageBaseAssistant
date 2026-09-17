@@ -60,6 +60,8 @@ class PublicSnapshotTests(unittest.TestCase):
                 ).is_file()
             )
             self.assertTrue((output / "contracts/core/manifest.json").is_file())
+            self.assertTrue((output / "tools/reconcile_legacy_goal_plan.py").is_file())
+            self.assertTrue((output / "tools/test_reconcile_legacy_goal_plan.py").is_file())
             self.assertFalse((output / "docs").exists())
             self.assertFalse((output / "deploy").exists())
             self.assertFalse((output / ".git").exists())
