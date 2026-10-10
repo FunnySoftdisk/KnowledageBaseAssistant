@@ -1,50 +1,19 @@
-"""TokenAccountingV1单一Pydantic源类型；SDK协议适配在M0另行验证。"""
+"""TokenAccountingV1向后兼容再导出；规范源在``domain.token_accounting``。
 
-from typing import Annotated, Literal
+此模块历史上曾作为Token Accounting类型的规范源；现规范源已下沉至领域层，这里仅保留
+``public.py``与既有测试的导入路径不变。
+"""
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, TypeAdapter, field_validator
+from ..domain.token_accounting import (
+    TOKEN_ACCOUNTING_ADAPTER,
+    EstimatedDevTokenAccountingV1,
+    ExactTokenAccountingV1,
+    TokenAccountingV1,
+)
 
-NonNegativeInt = Annotated[int, Field(ge=0)]
-Revision = Annotated[str, StringConstraints(min_length=1, pattern=r"^\S+$")]
-Sha256 = Annotated[str, StringConstraints(min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$")]
-
-
-class ExactTokenAccountingV1(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
-
-    mode: Literal["EXACT"]
-    estimated: Literal[False]
-    exact_input_tokens: NonNegativeInt
-    tokenizer_revision: Revision
-    chat_template_hash: Sha256
-
-    @field_validator("estimated", mode="before")
-    @classmethod
-    def require_false_boolean(cls, value: object) -> object:
-        if value is not False:
-            raise ValueError("EXACT requires estimated=false boolean")
-        return value
-
-
-class EstimatedDevTokenAccountingV1(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
-
-    mode: Literal["ESTIMATED_DEV"]
-    estimated: Literal[True]
-    estimated_input_tokens: NonNegativeInt
-    estimator_revision: Revision
-    serialized_request_bytes: NonNegativeInt
-    protocol_overhead_tokens: NonNegativeInt
-
-    @field_validator("estimated", mode="before")
-    @classmethod
-    def require_true_boolean(cls, value: object) -> object:
-        if value is not True:
-            raise ValueError("ESTIMATED_DEV requires estimated=true boolean")
-        return value
-
-
-TokenAccountingV1 = Annotated[
-    ExactTokenAccountingV1 | EstimatedDevTokenAccountingV1, Field(discriminator="mode")
+__all__ = [
+    "EstimatedDevTokenAccountingV1",
+    "ExactTokenAccountingV1",
+    "TOKEN_ACCOUNTING_ADAPTER",
+    "TokenAccountingV1",
 ]
-TOKEN_ACCOUNTING_ADAPTER: TypeAdapter[TokenAccountingV1] = TypeAdapter(TokenAccountingV1)

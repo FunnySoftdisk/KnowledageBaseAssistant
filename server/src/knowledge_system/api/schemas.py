@@ -45,3 +45,10 @@ class TaskCreateResponse(BaseModel):
     status: str
     deadline_at: datetime
     active_plan_version: int | None
+
+
+class TaskCancelResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    task_id: UUID
+    status: str

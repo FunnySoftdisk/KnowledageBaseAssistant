@@ -286,6 +286,17 @@ class TaskCreationServiceTests(unittest.IsolatedAsyncioTestCase):
             await service.create(request, subject, idempotency_key="k")
         self.assertEqual(caught.exception.code, "OUTPUT_CONTRACT_REF_NOT_FOUND")
 
+    def test_query_artifact_object_key_unique_per_artifact(self) -> None:
+        # 同一查询文本（同 sha256）的两次建任务不得撞 `content.artifact.object_key` 全局唯一
+        # 约束：object_key 以 artifact_id 结尾保证逐次唯一，sha256 仍作为独立列做内容校验。
+        subject = make_subject()
+        digest = hashlib.sha256(b"same query text").hexdigest()
+        first = TaskCreationService._build_query_artifact(uuid4(), digest, 16, subject)
+        second = TaskCreationService._build_query_artifact(uuid4(), digest, 16, subject)
+        self.assertEqual(first.sha256, second.sha256)
+        self.assertNotEqual(first.artifact_id, second.artifact_id)
+        self.assertNotEqual(first.object_key, second.object_key)
+
 
 class TaskQueryServiceTests(unittest.IsolatedAsyncioTestCase):
     def _row(self, **overrides: object) -> TaskRowSnapshot:

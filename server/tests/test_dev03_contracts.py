@@ -25,12 +25,16 @@ from knowledge_system.modules.temporal.domain.activity_profiles import (
     activity_profile,
 )
 from knowledge_system.modules.temporal.domain.contracts import (
+    AgentAttemptWorkflowInputV1,
     AgentTaskRootStateV1,
     AgentTaskRunStateV1,
     AgentTaskWorkflowArgsV1,
     AgentTaskWorkflowContinueV1,
     AgentTaskWorkflowResultV1,
     AgentTaskWorkflowStartV1,
+    AttemptCommitOutcomeV1,
+    AttemptKindV1,
+    AttemptTerminalCommitV1,
     BudgetUsageEntryV1,
     ContextVersionRefV1,
     PendingBusinessRequestRefV1,
@@ -191,6 +195,79 @@ class Dev03ContractTests(unittest.IsolatedAsyncioTestCase):
                 task_id=uuid4(),
                 run_sequence=1,
                 terminal_state=AgentTaskRunStateV1.COMPLETED,
+            )
+
+    def test_attempt_input_requires_fencing_tokens(self) -> None:
+        attempt_id = uuid4()
+        base = {
+            "task_id": uuid4(),
+            "task_attempt_id": attempt_id,
+            "attempt_kind": AttemptKindV1.PLAN,
+            "plan_version": 1,
+            "lease_generation": 3,
+            "attempt_row_version": 5,
+            "run_sequence": 1,
+            "parent_run_sequence": 1,
+        }
+        attempt_input = AgentAttemptWorkflowInputV1(**base)
+        self.assertEqual(attempt_input.lease_generation, 3)
+        self.assertEqual(attempt_input.attempt_row_version, 5)
+        with self.assertRaises(ValidationError):
+            AgentAttemptWorkflowInputV1(**{**base, "lease_generation": -1})
+        with self.assertRaises(ValidationError):
+            AgentAttemptWorkflowInputV1(**{**base, "attempt_row_version": 0})
+
+    def test_attempt_terminal_commit_enforces_shape(self) -> None:
+        task_id, attempt_id = uuid4(), uuid4()
+        # COMPLETED不得携带失败字段。
+        with self.assertRaises(ValidationError):
+            AttemptTerminalCommitV1(
+                task_id=task_id,
+                task_attempt_id=attempt_id,
+                lease_generation=0,
+                expected_row_version=1,
+                terminal_state="COMPLETED",
+                error_code="E",
+            )
+        # FAILED必须携带error_code。
+        with self.assertRaises(ValidationError):
+            AttemptTerminalCommitV1(
+                task_id=task_id,
+                task_attempt_id=attempt_id,
+                lease_generation=0,
+                expected_row_version=1,
+                terminal_state="FAILED",
+            )
+        # SUSPENDED必须携带suspension_kind。
+        with self.assertRaises(ValidationError):
+            AttemptTerminalCommitV1(
+                task_id=task_id,
+                task_attempt_id=attempt_id,
+                lease_generation=0,
+                expected_row_version=1,
+                terminal_state="SUSPENDED",
+            )
+        commit = AttemptTerminalCommitV1(
+            task_id=task_id,
+            task_attempt_id=attempt_id,
+            lease_generation=1,
+            expected_row_version=2,
+            terminal_state="FAILED",
+            error_code="E",
+            failure_class="BUSINESS",
+        )
+        self.assertEqual(commit.terminal_state, "FAILED")
+
+    def test_attempt_commit_outcome_conflict_reason(self) -> None:
+        outcome = AttemptCommitOutcomeV1(
+            task_attempt_id=uuid4(),
+            committed=False,
+            conflict_reason="STALE_LEASE_GENERATION",
+        )
+        self.assertFalse(outcome.committed)
+        with self.assertRaises(ValidationError):
+            AttemptCommitOutcomeV1(
+                task_attempt_id=uuid4(), committed=False, conflict_reason="NOT_A_REASON"
             )
 
     def test_workflow_id_formats_are_deterministic(self) -> None:

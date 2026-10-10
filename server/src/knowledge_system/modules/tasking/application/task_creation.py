@@ -357,7 +357,7 @@ class TaskCreationService:
             purpose="QUERY",
             artifact_type="TEXT",
             storage_backend="S3",
-            object_key=f"task-query/{sha256}",
+            object_key=f"task-query/{artifact_id}",
             size_bytes=size_bytes,
             sha256=sha256,
             detected_media_type="text/plain",

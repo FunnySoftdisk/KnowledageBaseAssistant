@@ -25,6 +25,7 @@ from knowledge_system.infrastructure.persistence import (  # noqa: F401
     foundation_models,
     planning_models,
     task_models,
+    task_result_models,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -61,6 +62,23 @@ CANONICAL_DEFERRED_FOREIGN_KEYS = {
     "workflow.context_pack.authorization_ref_id",
     "workflow.user_input_request.resume_bundle_id",
     "workflow.user_input_request.runtime_blocking_issue_id",
+    "workflow.model_call.action_attempt_id",
+    "workflow.model_call.branch_id",
+    "workflow.model_call.delegation_id",
+    "workflow.model_call.approved_endpoint_id",
+    "workflow.model_call.actual_endpoint_id",
+    "workflow.model_call.grant_id",
+    "workflow.model_call.budget_reservation_id",
+    "workflow.budget_reservation.branch_id",
+    "workflow.budget_reservation.delegation_id",
+    "workflow.budget_reservation.action_attempt_id",
+    "workflow.budget_reservation.invocation_id",
+    "workflow.budget_reservation.account_id",
+    "workflow.budget_ledger_entry.account_id",
+    "workflow.budget_ledger_entry.caused_by_event_id",
+    "workflow.task_result.final_snapshot_id",
+    "workflow.task_result.final_attempt_id",
+    "workflow.task_result.commit_receipt_id",
 }
 
 

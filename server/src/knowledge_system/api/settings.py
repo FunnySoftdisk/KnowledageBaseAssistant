@@ -45,6 +45,10 @@ class Settings(BaseModel):
     task_deadline_seconds: int = Field(default=600, ge=1)
     task_locale: str = Field(default="zh-CN", min_length=1, max_length=35)
     task_timezone: str = Field(default="Asia/Shanghai", min_length=1, max_length=64)
+    temporal_target: str = Field(default="127.0.0.1:7233", min_length=1, max_length=256)
+    temporal_namespace: str = Field(default="default", min_length=1, max_length=128)
+    api_host: str = Field(default="127.0.0.1", min_length=1, max_length=253)
+    api_port: int = Field(default=8000, ge=1, le=65535)
 
     def jwt_signing_secret(self) -> bytes:
         return self.jwt_signing_secret_ref.resolve()
@@ -74,4 +78,8 @@ class Settings(BaseModel):
             task_deadline_seconds=int(env.get("KNOWLEDGE_TASK_DEADLINE_SECONDS", "600")),
             task_locale=env.get("KNOWLEDGE_TASK_LOCALE", "zh-CN"),
             task_timezone=env.get("KNOWLEDGE_TASK_TIMEZONE", "Asia/Shanghai"),
+            temporal_target=env.get("KNOWLEDGE_TEMPORAL_TARGET", "127.0.0.1:7233"),
+            temporal_namespace=env.get("KNOWLEDGE_TEMPORAL_NAMESPACE", "default"),
+            api_host=env.get("KNOWLEDGE_API_HOST", "127.0.0.1"),
+            api_port=int(env.get("KNOWLEDGE_API_PORT", "8000")),
         )

@@ -39,6 +39,10 @@ WORKER_VERSIONING_BEHAVIOR: Final = "PINNED"
 # Root/Child均不设Execution/Run Timeout；每次Workflow Task明确限10秒。
 WORKFLOW_TASK_TIMEOUT_SECONDS: Final = 10
 
+# Root单Run最多派发的Attempt次数；达到即Continue-As-New以约束单Run History长度，
+# 续跑序号+1并携带运行态/预算（值随吞吐实测调优，骨架阶段取保守下界）。
+MAX_ATTEMPTS_PER_ROOT_RUN: Final = 10
+
 WORKFLOW_KIND_ROOT: Final = "ROOT"
 WORKFLOW_KIND_ATTEMPT: Final = "ATTEMPT"
 
@@ -68,6 +72,7 @@ __all__ = [
     "BUNDLE_TASK_QUEUE",
     "CAPABILITY_TASK_QUEUE",
     "CONTROL_TASK_QUEUE",
+    "MAX_ATTEMPTS_PER_ROOT_RUN",
     "MODEL_TASK_QUEUE",
     "SEARCH_ATTRIBUTES",
     "SLOT_SUPPLIERS",

@@ -14,7 +14,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from knowledge_system.infrastructure.persistence import (  # noqa: F401
     Base,
     attempt_models,
+    budget_models,
     foundation_models,
+    model_call_models,
     planning_models,
     task_models,
 )

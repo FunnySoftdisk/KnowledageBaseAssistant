@@ -25,6 +25,14 @@ class TemporalWorkflowStarter(Protocol):
         ...
 
 
+class TemporalWorkflowSignaller(Protocol):
+    """向Root Workflow投递业务事件信号的端口；测试用Fake替换，不虚构真实Temporal连接。"""
+
+    async def signal_task_workflow(self, workflow_id: str, signal_name: str) -> None:
+        """投递无参信号；幂等（Workflow自以PG游标重读事件）。"""
+        ...
+
+
 class TemporalClientAdapter:
     """真实`temporalio.client.Client`适配器。"""
 
@@ -47,5 +55,11 @@ class TemporalClientAdapter:
             raise RuntimeError("TEMPORAL_START_MISSING_RUN_ID")
         return run_id
 
+    async def signal_task_workflow(self, workflow_id: str, signal_name: str) -> None:
+        """向既有Root投递无参信号；Workflow不存在时由`temporalio`抛错交由调用方重试。"""
 
-__all__ = ["TemporalClientAdapter", "TemporalWorkflowStarter"]
+        handle = self._client.get_workflow_handle(workflow_id)
+        await handle.signal(signal_name)
+
+
+__all__ = ["TemporalClientAdapter", "TemporalWorkflowSignaller", "TemporalWorkflowStarter"]

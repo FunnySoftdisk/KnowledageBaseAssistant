@@ -10,11 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from knowledge_system.modules.tasking.application.gateway import (
     AttachmentEntrySnapshot,
     ConversationEntrySnapshot,
+    TaskEventSnapshot,
     TaskRowSnapshot,
 )
 
 from .foundation_models import ArtifactRecord, ConversationRecord
-from .task_models import ConversationMessageRecord, IntelligentTaskRecord
+from .task_models import ConversationMessageRecord, IntelligentTaskRecord, TaskEventRecord
 
 
 class TaskReadRepository:
@@ -87,6 +88,31 @@ class TaskReadRepository:
             started_at=record.started_at,
             completed_at=record.completed_at,
             updated_at=record.updated_at,
+        )
+
+    async def list_events(
+        self, task_id: UUID, after_sequence: int, limit: int
+    ) -> tuple[TaskEventSnapshot, ...]:
+        """按持久化 `sequence` 续读：返回 `sequence > after_sequence` 的有序事件窗口。"""
+
+        statement: Select[tuple[TaskEventRecord]] = (
+            select(TaskEventRecord)
+            .where(
+                TaskEventRecord.task_id == task_id,
+                TaskEventRecord.sequence > after_sequence,
+            )
+            .order_by(TaskEventRecord.sequence)
+            .limit(limit)
+        )
+        records = (await self._session.scalars(statement)).all()
+        return tuple(
+            TaskEventSnapshot(
+                sequence=record.sequence,
+                event_type=record.event_type,
+                event_schema_version=record.event_schema_version,
+                payload=dict(record.payload_json),
+            )
+            for record in records
         )
 
     async def _next_message_sequence(self, conversation_id: UUID) -> int:

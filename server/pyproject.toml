@@ -12,6 +12,7 @@ dependencies = [
   "temporalio==1.32.0",
   "pydantic==2.13.5",
   "httpx==0.28.1",
+  "jsonschema==4.23.0",
   "langcodes==3.5.1",
   "rfc8785==0.1.4",
   "SQLAlchemy==2.0.53",

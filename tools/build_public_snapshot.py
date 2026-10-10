@@ -16,6 +16,11 @@ EXACT_FILES = frozenset(
         ".gitattributes",
         ".gitignore",
         "PUBLIC_EXPORT.md",
+        "desktop/build.mjs",
+        "desktop/package-lock.json",
+        "desktop/package.json",
+        "desktop/tsconfig.json",
+        "desktop/tsconfig.renderer.json",
         "server/alembic.ini",
         "server/pyproject.toml",
         "server/uv.lock",
@@ -29,6 +34,8 @@ EXACT_FILES = frozenset(
 )
 PREFIXES = (
     "contracts/core/",
+    "desktop/src/",
+    "desktop/test/",
     "server/migrations/",
     "server/src/",
     "server/tests/",

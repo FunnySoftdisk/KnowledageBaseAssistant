@@ -18,7 +18,7 @@ from knowledge_system.infrastructure.persistence import (
     TaskCreationWriteConflictError,
 )
 from knowledge_system.modules.iam.public import AuthError, AuthErrorCode
-from knowledge_system.modules.tasking.public import TaskEntryError
+from knowledge_system.modules.tasking.public import SSEStreamError, TaskEntryError
 
 _HTTP_AUTH: Final[dict[AuthErrorCode, int]] = {
     AuthErrorCode.AUTH_INVALID_CREDENTIALS: 401,
@@ -34,10 +34,16 @@ _HTTP_TASK: Final[dict[str, int]] = {
     "CONVERSATION_NOT_FOUND": 404,
     "TASK_ATTACHMENT_INVALID": 422,
     "TASK_NOT_FOUND": 404,
+    "TASK_CANCEL_TERMINAL": 409,
     "OUTPUT_CONTRACT_REF_NOT_FOUND": 422,
     "OUTPUT_CONTRACT_REF_STALE": 422,
     "OUTPUT_CONTRACT_INVALID": 422,
     "OUTPUT_CONTRACT_PROFILE_INVALID": 500,
+}
+
+_HTTP_SSE: Final[dict[str, int]] = {
+    "SSE_CURSOR_INVALID": 400,
+    "SSE_CURSOR_AHEAD_OF_SERVER": 409,
 }
 
 _HTTP_PARSE: Final[dict[str, int]] = {
@@ -60,6 +66,7 @@ _MESSAGES: Final[dict[str, str]] = {
     "CONVERSATION_NOT_FOUND": "Conversation not found.",
     "TASK_ATTACHMENT_INVALID": "One or more attachments are not available.",
     "TASK_NOT_FOUND": "Task not found.",
+    "TASK_CANCEL_TERMINAL": "Task is already in a terminal state and cannot be cancelled.",
     "OUTPUT_CONTRACT_REF_NOT_FOUND": "Output contract reference not found.",
     "OUTPUT_CONTRACT_REF_STALE": "Output contract reference is stale.",
     "OUTPUT_CONTRACT_INVALID": "Output contract is invalid.",
@@ -72,6 +79,8 @@ _MESSAGES: Final[dict[str, str]] = {
     "DUPLICATE_JSON_KEY": "Request body contains duplicate JSON keys.",
     "REQUEST_VALIDATION_FAILED": "Request body failed validation.",
     "TASK_CREATION_WRITE_CONFLICT": "Task creation raced with a concurrent request.",
+    "SSE_CURSOR_INVALID": "Last-Event-ID cursor is invalid.",
+    "SSE_CURSOR_AHEAD_OF_SERVER": "Client event cursor is ahead of the server.",
     "INTERNAL_ERROR": "An internal error occurred.",
 }
 
@@ -192,6 +201,11 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(TaskEntryError)
     async def _task(request: Request, error: TaskEntryError) -> JSONResponse:
         status = _HTTP_TASK.get(error.code, 500)
+        return response(request, status=status, code=error.code, retryable=False)
+
+    @app.exception_handler(SSEStreamError)
+    async def _sse(request: Request, error: SSEStreamError) -> JSONResponse:
+        status = _HTTP_SSE.get(error.code, 500)
         return response(request, status=status, code=error.code, retryable=False)
 
     @app.exception_handler(RequestParseError)

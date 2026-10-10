@@ -14,7 +14,12 @@ from knowledge_system.modules.iam.public import (
     AuthErrorCode,
     Subject,
 )
-from knowledge_system.modules.tasking.public import TaskCreationService, TaskQueryService
+from knowledge_system.modules.tasking.public import (
+    TaskCancellationService,
+    TaskCreationService,
+    TaskEventStreamService,
+    TaskQueryService,
+)
 
 from .container import AppRuntime
 
@@ -70,3 +75,19 @@ def get_task_query_service(
 ) -> TaskQueryService:
     runtime: AppRuntime = request.app.state.runtime
     return runtime.task_query_service(session)
+
+
+def get_task_cancellation_service(
+    request: Request,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> TaskCancellationService:
+    runtime: AppRuntime = request.app.state.runtime
+    return runtime.task_cancellation_service(session)
+
+
+def get_task_event_stream_service(
+    request: Request,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> TaskEventStreamService:
+    runtime: AppRuntime = request.app.state.runtime
+    return runtime.task_event_stream_service(session)

@@ -62,22 +62,23 @@ class CoreExportTests(unittest.TestCase):
         self.assertEqual(matrix["decision_status"], "ACCEPTED")
         self.assertEqual(
             matrix["implementation_stage"],
-            "DEV_02_AUDIT_CHAIN",
+            "DEV_06_TASK_RESULT_PERSISTENCE",
         )
         self.assertEqual(matrix["blocked_by"], [])
         self.assertEqual(matrix["orm_mapping_status"], "COMPLETE")
-        self.assertEqual(matrix["migration_pg_status"], "DEV_02_AUDIT_PASS")
-        self.assertEqual(matrix["latest_verification"]["revision"], "0005")
+        self.assertEqual(matrix["migration_pg_status"], "DEV_06_TASK_RESULT_PASS")
+        self.assertEqual(matrix["latest_verification"]["revision"], "0008")
         self.assertEqual(matrix["latest_verification"]["alembic_schema_drift"], "NONE")
+        self.assertEqual(matrix["latest_verification"]["postgres_integration_tests"], "PASS")
+        self.assertEqual(matrix["latest_verification"]["task_result_table_round_trip"], "PASS")
+        self.assertEqual(matrix["latest_verification"]["task_result_integration_tests"], "3 passed")
         self.assertEqual(
-            matrix["latest_verification"]["postgres_integration_tests"], "22 passed"
+            matrix["latest_verification"]["full_server_test_suite"],
+            "868 passed; 691 subtests passed",
         )
-        self.assertEqual(
-            matrix["latest_verification"]["field_matrix_column_audit"], "PASS"
-        )
-        self.assertEqual(
-            matrix["latest_verification"]["legacy_goal_plan_reconciliation"], "PASS"
-        )
+        self.assertEqual(matrix["latest_verification"]["verified_at"], "2026-10-10")
+        self.assertEqual(matrix["latest_verification"]["field_matrix_column_audit"], "PASS")
+        self.assertEqual(matrix["latest_verification"]["legacy_goal_plan_reconciliation"], "PASS")
         self.assertEqual(
             matrix["latest_verification"]["legacy_goal_plan_0002_to_head_upgrade"],
             "PASS",
@@ -104,27 +105,17 @@ class CoreExportTests(unittest.TestCase):
         )
         self.assertIn("workflow.user_input_request", matrix["implemented_orm_tables"])
         self.assertIn("audit.audit_event", matrix["implemented_orm_tables"])
-        self.assertEqual(
-            matrix["latest_verification"]["audit_chain_table_round_trip"], "PASS"
-        )
-        self.assertEqual(
-            matrix["latest_verification"]["audit_chain_append_hash_linked"], "PASS"
-        )
-        self.assertEqual(
-            matrix["latest_verification"]["audit_chain_immutability"], "PASS"
-        )
-        self.assertEqual(
-            matrix["latest_verification"]["audit_task_creation_atomic"], "PASS"
-        )
+        self.assertEqual(matrix["latest_verification"]["audit_chain_table_round_trip"], "PASS")
+        self.assertEqual(matrix["latest_verification"]["audit_chain_append_hash_linked"], "PASS")
+        self.assertEqual(matrix["latest_verification"]["audit_chain_immutability"], "PASS")
+        self.assertEqual(matrix["latest_verification"]["audit_task_creation_atomic"], "PASS")
         self.assertIn(
             "workflow.intelligent_task.authorization_ref_id",
             matrix["deferred_foreign_keys"],
         )
         task_rules = matrix["column_rules"]["workflow.intelligent_task"]
         self.assertEqual(task_rules["public_initial_status"], "QUEUED")
-        self.assertEqual(
-            task_rules["required"], ["query_artifact_id", "current_input_id"]
-        )
+        self.assertEqual(task_rules["required"], ["query_artifact_id", "current_input_id"])
         for forbidden in (
             "knowledge_scope",
             "output_contract",

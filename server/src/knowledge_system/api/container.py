@@ -10,6 +10,7 @@ from knowledge_system.infrastructure.persistence import (
     IdentityRepository,
     SqlAlchemyAuditWriter,
     SqlAlchemyUnitOfWork,
+    TaskCancellationTransactionService,
     TaskCreationTransactionService,
     TaskReadRepository,
 )
@@ -20,7 +21,12 @@ from knowledge_system.modules.iam.public import (
     AuthenticationService,
     SubjectResolver,
 )
-from knowledge_system.modules.tasking.public import TaskCreationService, TaskQueryService
+from knowledge_system.modules.tasking.public import (
+    TaskCancellationService,
+    TaskCreationService,
+    TaskEventStreamService,
+    TaskQueryService,
+)
 
 from .settings import Settings
 
@@ -63,3 +69,15 @@ class AppRuntime:
 
     def task_query_service(self, session: AsyncSession) -> TaskQueryService:
         return TaskQueryService(TaskReadRepository(session))
+
+    def task_cancellation_service(self, session: AsyncSession) -> TaskCancellationService:
+        return TaskCancellationService(
+            TaskCancellationTransactionService(
+                lambda: SqlAlchemyUnitOfWork(self.session_factory),
+                AuditService(),
+            ),
+            TaskReadRepository(session),
+        )
+
+    def task_event_stream_service(self, session: AsyncSession) -> TaskEventStreamService:
+        return TaskEventStreamService(TaskReadRepository(session))

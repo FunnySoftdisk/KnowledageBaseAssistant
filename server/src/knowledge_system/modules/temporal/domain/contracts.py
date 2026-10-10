@@ -233,12 +233,19 @@ class AgentTaskWorkflowResultV1(TemporalContractV1):
 
 
 class AgentAttemptWorkflowInputV1(TemporalContractV1):
-    """Child `AgentAttemptWorkflow`输入；Attempt Spec细节随DEV-03C冻结。"""
+    """Child `AgentAttemptWorkflow`输入；携带fencing与并发令牌。
+
+    `lease_generation`/`attempt_row_version`由Root在认领Attempt时从PG捕获，随输入传给
+    Child；Child终态提交以二者做四重CAS，被重新调度（Generation递增）或并发更新的旧
+    Child会因CAS失败而被隔离（迟到结果丢弃）。
+    """
 
     task_id: UUID
     task_attempt_id: UUID
     attempt_kind: AttemptKindV1
     plan_version: int | None = Field(default=None, ge=1)
+    lease_generation: int = Field(ge=0)
+    attempt_row_version: int = Field(ge=1)
     run_sequence: int = Field(ge=1)
     parent_run_sequence: int = Field(ge=1)
 
@@ -274,6 +281,83 @@ AgentAttemptResultV1 = RootModel[
         Field(discriminator="kind"),
     ]
 ]
+
+
+class ExecuteAttemptCommandV1(TemporalContractV1):
+    """Child认知Activity命令；认知Activity在本批以显式测试替身替换（不调真实模型）。"""
+
+    task_id: UUID
+    task_attempt_id: UUID
+    attempt_kind: AttemptKindV1
+    plan_version: int | None = Field(default=None, ge=1)
+
+
+class ExecuteAttemptResultV1(TemporalContractV1):
+    """Child认知Activity结果；成功携带结果摘要，失败携带失败分类。"""
+
+    task_id: UUID
+    task_attempt_id: UUID
+    result_kind: str | None = None
+    result_schema_version: str | None = None
+    result_digest: Sha256Hex | None = None
+    error_code: str | None = None
+    failure_class: Literal[
+        "BUSINESS", "DEPENDENCY", "CONTRACT", "POLICY", "BUDGET", "RESOURCE", "EXTERNAL_EFFECT"
+    ] | None = None
+
+
+class AttemptTerminalCommitV1(TemporalContractV1):
+    """Child终态提交命令：`task_attempt_id + lease_generation + row_version + RUNNING`四重CAS。
+
+    `lease_generation`/`expected_row_version`必须与Child启动时捕获的一致；任一不匹配即
+    拒绝提交，用于隔离旧Generation（被重新调度）与迟到结果（并发已推进）。
+    """
+
+    task_id: UUID
+    task_attempt_id: UUID
+    lease_generation: int = Field(ge=0)
+    expected_row_version: int = Field(ge=1)
+    terminal_state: Literal["COMPLETED", "FAILED", "SUSPENDED", "CANCELLED"]
+    result_kind: str | None = None
+    result_schema_version: str | None = None
+    result_digest: Sha256Hex | None = None
+    suspension_kind: Literal["APPROVAL", "USER_INPUT", "EXTERNAL_RESULT", "MIXED"] | None = None
+    error_code: str | None = None
+    failure_class: Literal[
+        "BUSINESS", "DEPENDENCY", "CONTRACT", "POLICY", "BUDGET", "RESOURCE", "EXTERNAL_EFFECT"
+    ] | None = None
+
+    @model_validator(mode="after")
+    def _terminal_shape(self) -> AttemptTerminalCommitV1:
+        if self.terminal_state == "COMPLETED" and (
+            self.error_code is not None or self.failure_class is not None
+        ):
+            raise ValueError("ATTEMPT_COMPLETED_HAS_FAILURE")
+        if self.terminal_state == "FAILED" and self.error_code is None:
+            raise ValueError("ATTEMPT_FAILED_REQUIRES_ERROR_CODE")
+        if self.terminal_state == "SUSPENDED" and self.suspension_kind is None:
+            raise ValueError("ATTEMPT_SUSPENDED_REQUIRES_KIND")
+        return self
+
+
+class AttemptCommitOutcomeV1(TemporalContractV1):
+    """终态CAS结果；`committed=False`表示被隔离，`conflict_reason`给出精确原因。"""
+
+    task_attempt_id: UUID
+    committed: bool
+    conflict_reason: Literal[
+        "STALE_LEASE_GENERATION", "ROW_VERSION_CONFLICT", "NOT_RUNNING", "NOT_FOUND"
+    ] | None = None
+
+
+class AttemptDispatchV1(TemporalContractV1):
+    """Root认领到的一次Attempt调度指令；携带Child启动所需的fencing令牌。"""
+
+    task_attempt_id: UUID
+    attempt_kind: AttemptKindV1
+    plan_version: int | None = Field(default=None, ge=1)
+    lease_generation: int = Field(ge=0)
+    attempt_row_version: int = Field(ge=1)
 
 
 class ApplyBusinessEventsCommandV1(TemporalContractV1):
@@ -323,12 +407,17 @@ __all__ = [
     "AgentTaskWorkflowStartV1",
     "ApplyBusinessEventsCommandV1",
     "ApplyBusinessEventsResultV1",
+    "AttemptCommitOutcomeV1",
     "AttemptCompletedV1",
+    "AttemptDispatchV1",
     "AttemptFailedV1",
     "AttemptKindV1",
     "AttemptSuspendedV1",
+    "AttemptTerminalCommitV1",
     "BudgetUsageEntryV1",
     "ContextVersionRefV1",
+    "ExecuteAttemptCommandV1",
+    "ExecuteAttemptResultV1",
     "PendingBusinessRequestRefV1",
     "RootTerminalCommitV1",
     "RuntimeContractRefV1",

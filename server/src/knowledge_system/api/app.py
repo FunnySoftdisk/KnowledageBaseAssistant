@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from uuid import uuid4
 
 from fastapi import FastAPI, Request, Response
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from knowledge_system.infrastructure.persistence import (
     DatabaseEngineSettings,
@@ -22,9 +23,26 @@ from .routers import tasks as tasks_router
 from .settings import Settings
 
 
-def create_app(settings: Settings) -> FastAPI:
-    engine = build_async_engine(DatabaseEngineSettings(url=settings.database_url))
-    session_factory = build_session_factory(engine)
+def create_app(
+    settings: Settings,
+    *,
+    engine: AsyncEngine | None = None,
+    session_factory: async_sessionmaker[AsyncSession] | None = None,
+) -> FastAPI:
+    """装配FastAPI应用。
+
+    `engine`/`session_factory`可选注入以共享给同进程的Temporal Worker与Outbox轮询器；
+    二者要么同时给出（调用方拥有引擎、负责释放），要么都不给（本函数自建并释放）。
+    """
+
+    owns_engine = engine is None
+    if engine is None:
+        engine = build_async_engine(DatabaseEngineSettings(url=settings.database_url))
+    if session_factory is None:
+        if owns_engine:
+            session_factory = build_session_factory(engine)
+        else:
+            raise ValueError("SESSION_FACTORY_REQUIRED_WITH_ENGINE")
     token_service = AccessTokenService(
         settings.jwt_signing_secret(),
         token_minutes=settings.access_token_minutes,
@@ -40,7 +58,8 @@ def create_app(settings: Settings) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         del app
         yield
-        await engine.dispose()
+        if owns_engine:
+            await engine.dispose()
 
     app = FastAPI(
         title="高校科研团队私有化多 Agent 知识库 API",

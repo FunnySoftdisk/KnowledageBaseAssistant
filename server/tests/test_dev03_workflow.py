@@ -45,6 +45,9 @@ from knowledge_system.modules.temporal.domain.workflow_ids import (
     agent_task_workflow_id,
 )
 from knowledge_system.modules.temporal.workflows.agent_task import AgentTaskWorkflow
+from knowledge_system.modules.temporal.workflows.attempt_activities import (
+    CLAIM_NEXT_ATTEMPT_ACTIVITY,
+)
 from knowledge_system.modules.temporal.workflows.control_activities import (
     APPLY_BUSINESS_EVENTS_ACTIVITY,
     COMMIT_ROOT_TERMINAL_STATE_ACTIVITY,
@@ -67,6 +70,12 @@ async def _apply_events_stub(command: ApplyBusinessEventsCommandV1) -> ApplyBusi
 @activity.defn(name=COMMIT_ROOT_TERMINAL_STATE_ACTIVITY)
 async def _commit_terminal_stub(commit: RootTerminalCommitV1) -> None:
     _COMMITS.append(commit)
+
+
+@activity.defn(name=CLAIM_NEXT_ATTEMPT_ACTIVITY)
+async def _claim_none_stub(task_id: object) -> None:
+    # 本批既有用例只验证游标推进与截止时间，不验证Attempt调度：认领返回无可用Attempt。
+    return None
 
 
 def _start_args(deadline: datetime) -> tuple[AgentTaskWorkflowArgsV1, object]:
@@ -100,7 +109,7 @@ class Dev03WorkflowTests(unittest.IsolatedAsyncioTestCase):
         control_worker = Worker(
             self.env.client,
             task_queue=CONTROL_TASK_QUEUE,
-            activities=[_apply_events_stub, _commit_terminal_stub],
+            activities=[_apply_events_stub, _commit_terminal_stub, _claim_none_stub],
         )
         return workflow_worker, control_worker
 

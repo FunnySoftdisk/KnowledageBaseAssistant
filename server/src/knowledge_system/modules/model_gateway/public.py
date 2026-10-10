@@ -1,9 +1,210 @@
 """其他业务模块可引用的项目类型；不暴露SDK对象/Provider凭据。"""
 
-from .application.token_accounting import (
+from .domain.budget_ledger import (
+    BudgetLedgerEntryKind,
+    BudgetLedgerEntryV1,
+    BudgetSettlementOverrunError,
+    conservation_gap,
+    is_conserved,
+    settle_deltas,
+)
+from .domain.budget_quantity import BudgetQuantityDeltaV1, BudgetQuantityV1
+from .domain.budget_reservation import (
+    BudgetReservationStateViolation,
+    BudgetReservationStatus,
+    BudgetReservationV1,
+    BudgetSettlementDecision,
+    resolve_settlement,
+)
+from .domain.budget_reservation import (
+    can_transition as budget_can_transition,
+)
+from .domain.budget_reservation import (
+    is_terminal as budget_is_terminal,
+)
+from .domain.budget_reservation import (
+    require_transition as budget_require_transition,
+)
+from .domain.call_state import (
+    ModelCallState,
+    ModelCallStateViolation,
+    can_transition,
+    is_terminal,
+    require_transition,
+)
+from .domain.config_projection import (
+    CallerOverrideV1,
+    ConfigProjectionStatus,
+    ConfigProjectionV1,
+    ConfigProjectionViolation,
+    EndpointProjectionV1,
+    ModelBindingProjectionV1,
+    RouteProjectionV1,
+    assert_no_caller_override,
+    resolve_config_enablement,
+)
+from .domain.egress_admission import EgressBodyDigestV1, verify_egress_projection
+from .domain.model_call import DataScope, ModelCallV1
+from .domain.output_schema import (
+    OutputSchemaMode,
+    StrictOutputSchemaV1,
+    StructuredOutputViolation,
+    is_strict_json_schema,
+    require_strict_output,
+    resolve_output_mode,
+)
+from .domain.provider_error import (
+    ProviderErrorCode,
+    ProviderErrorSource,
+    ProviderErrorV1,
+    disables_endpoint,
+    is_transient_error,
+    normalize_provider_error,
+)
+from .domain.retry_policy import (
+    RetryDelayDecision,
+    RetryOutcome,
+    classify_retry,
+    compute_next_retry_delay,
+    parse_retry_after,
+)
+from .domain.span_policy import (
+    LLM_TRACE_ALLOWLIST_V1,
+    SpanPolicyViolation,
+    filter_llm_span_attributes,
+    is_sensitive_attribute_name,
+    require_no_secret_attributes,
+    strip_secret_attributes,
+)
+from .domain.stream_event import (
+    BifrostDeltaEventV1,
+    BifrostErrorEventV1,
+    BifrostEventV1,
+    BifrostUsageEventV1,
+    ModelCompletedEventV1,
+    ModelDeltaEventV1,
+    ModelErrorEventV1,
+    ModelEventV1,
+    ModelStartedEventV1,
+    ModelUsageEventV1,
+)
+from .domain.stream_normalizer import (
+    StreamNormalizerState,
+    StreamTerminalV1,
+    normalize_bifrost_event,
+    resolve_stream_terminal,
+)
+from .domain.token_accounting import (
     EstimatedDevTokenAccountingV1,
     ExactTokenAccountingV1,
     TokenAccountingV1,
 )
+from .domain.trace_context import (
+    TRACEPARENT_HEADER,
+    TRACEPARENT_VERSION,
+    SpanContextV1,
+    SpanId,
+    TraceContextViolation,
+    TraceId,
+    decode_traceparent,
+    encode_traceparent,
+)
+from .domain.usage import (
+    EstimatedModelUsageV1,
+    ExactModelUsageV1,
+    ModelUsageV1,
+    SettlementKind,
+    UnknownModelUsageV1,
+    resolve_settlement_kind,
+)
 
-__all__ = ["ExactTokenAccountingV1", "EstimatedDevTokenAccountingV1", "TokenAccountingV1"]
+__all__ = [
+    "ExactTokenAccountingV1",
+    "EstimatedDevTokenAccountingV1",
+    "TokenAccountingV1",
+    "BudgetLedgerEntryKind",
+    "BudgetLedgerEntryV1",
+    "BudgetQuantityDeltaV1",
+    "BudgetQuantityV1",
+    "BudgetReservationStateViolation",
+    "BudgetReservationStatus",
+    "BudgetReservationV1",
+    "BudgetSettlementDecision",
+    "BudgetSettlementOverrunError",
+    "budget_can_transition",
+    "budget_is_terminal",
+    "budget_require_transition",
+    "conservation_gap",
+    "is_conserved",
+    "resolve_settlement",
+    "settle_deltas",
+    "DataScope",
+    "ModelCallV1",
+    "ModelCallState",
+    "ModelCallStateViolation",
+    "can_transition",
+    "is_terminal",
+    "require_transition",
+    "ProviderErrorCode",
+    "ProviderErrorSource",
+    "ProviderErrorV1",
+    "disables_endpoint",
+    "is_transient_error",
+    "normalize_provider_error",
+    "RetryDelayDecision",
+    "RetryOutcome",
+    "classify_retry",
+    "compute_next_retry_delay",
+    "parse_retry_after",
+    "BifrostDeltaEventV1",
+    "BifrostErrorEventV1",
+    "BifrostEventV1",
+    "BifrostUsageEventV1",
+    "ModelCompletedEventV1",
+    "ModelDeltaEventV1",
+    "ModelErrorEventV1",
+    "ModelEventV1",
+    "ModelStartedEventV1",
+    "ModelUsageEventV1",
+    "StreamNormalizerState",
+    "StreamTerminalV1",
+    "normalize_bifrost_event",
+    "resolve_stream_terminal",
+    "ExactModelUsageV1",
+    "EstimatedModelUsageV1",
+    "UnknownModelUsageV1",
+    "ModelUsageV1",
+    "SettlementKind",
+    "resolve_settlement_kind",
+    "CallerOverrideV1",
+    "ConfigProjectionStatus",
+    "ConfigProjectionV1",
+    "ConfigProjectionViolation",
+    "EndpointProjectionV1",
+    "ModelBindingProjectionV1",
+    "RouteProjectionV1",
+    "assert_no_caller_override",
+    "resolve_config_enablement",
+    "OutputSchemaMode",
+    "StrictOutputSchemaV1",
+    "StructuredOutputViolation",
+    "is_strict_json_schema",
+    "require_strict_output",
+    "resolve_output_mode",
+    "TRACEPARENT_HEADER",
+    "TRACEPARENT_VERSION",
+    "SpanContextV1",
+    "SpanId",
+    "TraceContextViolation",
+    "TraceId",
+    "decode_traceparent",
+    "encode_traceparent",
+    "LLM_TRACE_ALLOWLIST_V1",
+    "SpanPolicyViolation",
+    "filter_llm_span_attributes",
+    "is_sensitive_attribute_name",
+    "require_no_secret_attributes",
+    "strip_secret_attributes",
+    "EgressBodyDigestV1",
+    "verify_egress_projection",
+]

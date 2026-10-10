@@ -49,6 +49,14 @@ class CapabilityRefV1(StrictContractV1):
     integrity_digest: Sha256Hex
 
 
+class VersionedRefV1(StrictContractV1):
+    """CORE-09～16增补：带版本的通用不可变引用，只携带身份/版本/摘要，不授予权限。"""
+
+    ref_id: UUID
+    version: int = Field(ge=1)
+    integrity_digest: Sha256Hex
+
+
 class TaskAttachmentBindingRefV1(StrictContractV1):
     binding_id: UUID
     task_id: UUID

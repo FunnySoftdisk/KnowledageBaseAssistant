@@ -63,5 +63,18 @@ class TaskRowSnapshot(BaseModel):
     updated_at: datetime
 
 
+class TaskEventSnapshot(BaseModel):
+    model_config = ConfigDict(frozen=True, strict=True, extra="forbid")
+
+    sequence: int = Field(ge=1)
+    event_type: str
+    event_schema_version: str
+    payload: dict[str, object]
+
+
 class TaskQueryGateway(Protocol):
     async def get_task(self, task_id: UUID) -> TaskRowSnapshot | None: ...
+
+    async def list_events(
+        self, task_id: UUID, after_sequence: int, limit: int
+    ) -> tuple[TaskEventSnapshot, ...]: ...

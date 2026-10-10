@@ -1,0 +1,23 @@
+{
+  "name": "knowledge-system-desktop",
+  "version": "0.1.0-dev",
+  "private": true,
+  "type": "module",
+  "description": "Windows desktop workbench client (Electron, plain-TS renderer). DEV-07: Task event-stream reducer + fetch-SSE reconnect client + minimal task page.",
+  "main": "dist/main.cjs",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "test": "node --test",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.renderer.json",
+    "build": "node build.mjs",
+    "start": "npm run build && electron ."
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "electron": "^44.7.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.7.0"
+  }
+}

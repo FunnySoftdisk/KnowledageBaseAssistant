@@ -9,6 +9,9 @@
 - `server/src/`下的工程源码；
 - `server/tests/`下与公开源码对应的测试；
 - `server/migrations/`下的数据库迁移链；
+- `desktop/package.json`、锁文件、TypeScript配置与构建脚本；
+- `desktop/src/`下的Electron主进程、Preload和Renderer源码；
+- `desktop/test/`下与公开桌面端源码对应的测试；
 - `contracts/core/`下由公开源码生成的核心机器契约；
 - `tools/core_contract_exports.py`及其测试；
 - `tools/reconcile_legacy_goal_plan.py`及其测试；
@@ -23,6 +26,7 @@
 - `deploy/`中的内部环境、发行探针和运行观察；
 - 尚未接入工程源码的外部研究Prompt、Profile、fixture及大批设计Schema；
 - 缓存、虚拟环境、运行数据、模型权重和构建产物；
+- `desktop/node_modules/`、`desktop/dist/`及桌面端内部阶段README；
 - 私有Git提交历史。
 
 ## 发布原则

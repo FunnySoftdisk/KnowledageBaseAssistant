@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src http://127.0.0.1:8000 http://localhost:8000"
+    />
+    <title>任务进度</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body { font-family: system-ui, sans-serif; max-width: 42rem; margin: 3rem auto; padding: 0 1rem; }
+      h1 { font-size: 1.25rem; }
+      h2 { font-size: 1rem; }
+      input, textarea { box-sizing: border-box; width: 100%; margin: 0.25rem 0 0.75rem; padding: 0.5rem; }
+      textarea { resize: vertical; }
+      button { padding: 0.4rem 1rem; }
+      #status { font-size: 2rem; margin: 1.5rem 0 0.5rem; }
+      #phase, #seq, #result { color: #666; }
+      .error { color: #d33; }
+    </style>
+  </head>
+  <body>
+    <h1>任务进度</h1>
+
+    <section id="auth">
+      <h2>登录</h2>
+      <label>用户名 <input id="username" type="text" autocomplete="username" /></label>
+      <label>密码 <input id="password" type="password" autocomplete="current-password" /></label>
+      <p><button id="login-btn" type="button">登录</button></p>
+      <p id="login-error" class="error"></p>
+    </section>
+
+    <section id="task-form" hidden>
+      <h2>输入任务</h2>
+      <label>任务描述 <textarea id="query" rows="4" placeholder="描述你的任务…"></textarea></label>
+      <p><button id="create-btn" type="button">创建任务</button></p>
+      <p id="create-error" class="error"></p>
+    </section>
+
+    <section id="progress" hidden>
+      <p id="status">连接中…</p>
+      <p id="phase"></p>
+      <p id="seq"></p>
+      <p id="result"></p>
+      <p><button id="cancel-btn" type="button">取消任务</button></p>
+      <p id="cancel-error" class="error"></p>
+    </section>
+
+    <script type="module" src="./index.js"></script>
+  </body>
+</html>

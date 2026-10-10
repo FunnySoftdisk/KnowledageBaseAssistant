@@ -92,6 +92,36 @@ class TaskCreationWriteSet:
             raise PersistenceContractError("TASK_AUDIT_RESOURCE_MISMATCH")
 
 
+@dataclass(frozen=True, slots=True)
+class TaskCancellationWriteSet:
+    """`POST /{task_id}/cancel` 需要原子保存的行集：取消事件、信号 Outbox 与审计。
+
+    事件序号不由应用层预计算：由事务内 `allocate_next_event_sequence` 权威分配后回填，
+    避免应用读取与落库之间并发追加事件导致的序号错位。
+    """
+
+    task_id: UUID
+    cancelled_event: TaskEventRecord
+    signal_outbox: OutboxMessageRecord
+    audit_event: AuditEventDraft
+
+    def validate_relations(self) -> None:
+        if self.cancelled_event.task_id != self.task_id:
+            raise PersistenceContractError("TASK_CANCEL_EVENT_TASK_MISMATCH")
+        if self.cancelled_event.event_type != "TASK_CANCELLED":
+            raise PersistenceContractError("TASK_CANCEL_EVENT_TYPE_INVALID")
+        if self.signal_outbox.event_id != self.cancelled_event.id:
+            raise PersistenceContractError("TASK_CANCEL_OUTBOX_EVENT_MISMATCH")
+        if self.signal_outbox.destination != "TEMPORAL_SIGNAL":
+            raise PersistenceContractError("TASK_CANCEL_OUTBOX_DESTINATION_INVALID")
+        if (
+            self.audit_event.resource_type != "TASK"
+            or self.audit_event.resource_id != str(self.task_id)
+            or self.audit_event.result != "SUCCESS"
+        ):
+            raise PersistenceContractError("TASK_CANCEL_AUDIT_RESOURCE_MISMATCH")
+
+
 class TaskTransactionRepository:
     """Task行、事件、Outbox及幂等记录的同Session适配器。"""
 
@@ -121,6 +151,37 @@ class TaskTransactionRepository:
         await self._session.flush(event_dependencies)
         self._session.add(write_set.starter_outbox)
         self._session.add(write_set.idempotency)
+
+    async def add_task_cancellation(self, write_set: TaskCancellationWriteSet) -> None:
+        """追加取消事件与信号 Outbox；事件序号由权威 UPDATE...RETURNING 分配后回填。"""
+
+        write_set.validate_relations()
+        sequence = await self.allocate_next_event_sequence(write_set.task_id)
+        # 序号即业务版本（`uq_task_event_business_version` 唯一索引要求同一 (task_id,
+        # TASK, business_ref_id) 下 business_version 唯一，且不能与 TASK_CREATED 的 1 冲突），
+        # Outbox 的 aggregate_version 同步为同一次业务推进的版本，保持单调。
+        write_set.cancelled_event.sequence = sequence
+        write_set.cancelled_event.business_version = sequence
+        write_set.signal_outbox.aggregate_version = sequence
+        self._session.add(write_set.cancelled_event)
+        # 纯Mapper不建relationship，因此明确在Outbox之前落下Event（Outbox.event_id外键）。
+        await self._session.flush((write_set.cancelled_event,))
+        self._session.add(write_set.signal_outbox)
+
+    async def cas_cancel_request(self, task_id: UUID, expected_status: str) -> bool:
+        """开放态 → `CANCEL_REQUESTED` 的单行 CAS；命中返回 True（RETURNING 到 id）。"""
+
+        statement = (
+            update(IntelligentTaskRecord)
+            .where(
+                IntelligentTaskRecord.id == task_id,
+                IntelligentTaskRecord.status == expected_status,
+            )
+            .values(status="CANCEL_REQUESTED")
+            .returning(IntelligentTaskRecord.id)
+        )
+        matched_id = await self._session.scalar(statement)
+        return matched_id is not None
 
     async def allocate_next_event_sequence(self, task_id: UUID) -> int:
         statement = (

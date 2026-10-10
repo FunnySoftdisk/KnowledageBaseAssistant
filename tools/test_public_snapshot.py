@@ -26,6 +26,15 @@ class PublicSnapshotTests(unittest.TestCase):
             destination_for("contracts/core/manifest.json"),
             "contracts/core/manifest.json",
         )
+        self.assertEqual(destination_for("desktop/package.json"), "desktop/package.json")
+        self.assertEqual(
+            destination_for("desktop/src/main/index.ts"),
+            "desktop/src/main/index.ts",
+        )
+        self.assertEqual(
+            destination_for("desktop/test/taskReducer.test.ts"),
+            "desktop/test/taskReducer.test.ts",
+        )
         for private_path in (
             "docs/开发状态.md",
             "deploy/m0/bailian-account.json",
@@ -49,17 +58,20 @@ class PublicSnapshotTests(unittest.TestCase):
             self.assertTrue((output / "server/alembic.ini").is_file())
             self.assertTrue((output / "server/migrations/env.py").is_file())
             self.assertTrue(
-                (
-                    output / "server/migrations/versions/0002_goal_plan_persistence.py"
-                ).is_file()
+                (output / "server/migrations/versions/0002_goal_plan_persistence.py").is_file()
             )
             self.assertTrue(
-                (
-                    output
-                    / "server/migrations/versions/0004_goal_clarification_request.py"
-                ).is_file()
+                (output / "server/migrations/versions/0004_goal_clarification_request.py").is_file()
             )
             self.assertTrue((output / "contracts/core/manifest.json").is_file())
+            self.assertTrue((output / "desktop/package.json").is_file())
+            self.assertTrue((output / "desktop/package-lock.json").is_file())
+            self.assertTrue((output / "desktop/src/main/index.ts").is_file())
+            self.assertTrue((output / "desktop/src/renderer/index.ts").is_file())
+            self.assertTrue((output / "desktop/test/realBackend.test.ts").is_file())
+            self.assertFalse((output / "desktop/README.md").exists())
+            self.assertFalse((output / "desktop/node_modules").exists())
+            self.assertFalse((output / "desktop/dist").exists())
             self.assertTrue((output / "tools/reconcile_legacy_goal_plan.py").is_file())
             self.assertTrue((output / "tools/test_reconcile_legacy_goal_plan.py").is_file())
             self.assertFalse((output / "docs").exists())
@@ -77,9 +89,7 @@ class PublicSnapshotTests(unittest.TestCase):
                 build_snapshot(output)
 
     def test_output_inside_private_project_is_rejected(self) -> None:
-        with self.assertRaisesRegex(
-            PublicExportError, "OUTPUT_INSIDE_PRIVATE_PROJECT_FORBIDDEN"
-        ):
+        with self.assertRaisesRegex(PublicExportError, "OUTPUT_INSIDE_PRIVATE_PROJECT_FORBIDDEN"):
             build_snapshot(PROJECT_ROOT / ".public-snapshot-test")
 
     def test_secret_markers_are_rejected(self) -> None:
