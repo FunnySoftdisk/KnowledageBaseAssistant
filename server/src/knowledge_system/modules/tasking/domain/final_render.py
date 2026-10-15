@@ -17,9 +17,9 @@ Contract 确定性生成 UTF-8/LF/NFC Markdown：按结构生成标题、段落�
 from __future__ import annotations
 
 import unicodedata
-from typing import Annotated, Literal
+from typing import Annotated, Final, Literal
 
-from pydantic import StringConstraints
+from pydantic import StringConstraints, TypeAdapter
 
 from .core_types import Sha256Hex, StrictContractV1, canonical_json_sha256
 from .final_admission import FinalSupportCatalogEntryV1
@@ -64,6 +64,16 @@ class FinalAnswerV1(StrictContractV1):
     format: Literal["MARKDOWN"]
     markdown: Annotated[str, StringConstraints(min_length=1, max_length=ANSWER_MAX_BYTES)]
     answer_digest: Sha256Hex = "0" * 64
+
+
+FINAL_ANSWER_OUTPUT_SCHEMA_VERSION: Final = "final_answer_v1"
+FINAL_ANSWER_RENDERER_PROFILE_DIGEST: Final = canonical_json_sha256(
+    {
+        "profile_name": FINAL_ANSWER_RENDERER_PROFILE,
+        "output_schema_version": FINAL_ANSWER_OUTPUT_SCHEMA_VERSION,
+        "output_schema": TypeAdapter(FinalAnswerV1).json_schema(),
+    }
+)
 
 
 def _escape_markdown(text: str) -> str:
@@ -240,6 +250,7 @@ def render_final_answer(
 __all__ = [
     "ANSWER_MAX_BYTES",
     "FINAL_ANSWER_RENDERER_PROFILE",
+    "FINAL_ANSWER_RENDERER_PROFILE_DIGEST",
     "FinalAnswerV1",
     "render_final_answer",
 ]

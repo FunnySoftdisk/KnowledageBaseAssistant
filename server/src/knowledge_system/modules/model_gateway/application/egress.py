@@ -10,10 +10,10 @@ ModelGatewayService内部出网准入方法——控制服务读PG当前ModelCal
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Protocol
+from typing import Literal, Protocol
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ..domain.egress_admission import EgressBodyDigestV1
 
@@ -34,6 +34,17 @@ class EgressAdmissionOutcome(StrEnum):
     RECONCILING = "RECONCILING"
 
 
+class EgressExecutionPermitV1(BaseModel):
+    """准入服务签发的内部执行许可；只含SecretRef，不含Provider Key。"""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    provider: Literal["alibaba_bailian"]
+    provider_model: str = Field(min_length=1, max_length=192)
+    secret_ref: str = Field(min_length=1, max_length=256)
+    secret_version: int = Field(ge=1)
+
+
 class EgressAdmissionDecisionV1(BaseModel):
     """出网准入决策；`REJECTED`/`RECONCILING`时`reason_code`为稳定可公开拒绝码。"""
 
@@ -41,19 +52,28 @@ class EgressAdmissionDecisionV1(BaseModel):
 
     outcome: EgressAdmissionOutcome
     reason_code: str | None = None
+    permit: EgressExecutionPermitV1 | None = None
+
+    @model_validator(mode="after")
+    def validate_outcome_payload(self) -> EgressAdmissionDecisionV1:
+        if self.outcome is EgressAdmissionOutcome.ADMITTED:
+            if self.permit is None or self.reason_code is not None:
+                raise ValueError("EGRESS_ADMISSION_DECISION_INVALID")
+        elif self.permit is not None:
+            raise ValueError("EGRESS_ADMISSION_DECISION_INVALID")
+        return self
 
 
 class ModelEgressAdmission(Protocol):
     """最后跳出网准入端口；实现位于基础设施层，Bridge在最后跳注入前调用。"""
 
-    async def admit(
-        self, *, request: EgressAdmissionRequestV1
-    ) -> EgressAdmissionDecisionV1: ...
+    async def admit(self, *, request: EgressAdmissionRequestV1) -> EgressAdmissionDecisionV1: ...
 
 
 __all__ = [
     "EgressAdmissionDecisionV1",
     "EgressAdmissionOutcome",
     "EgressAdmissionRequestV1",
+    "EgressExecutionPermitV1",
     "ModelEgressAdmission",
 ]

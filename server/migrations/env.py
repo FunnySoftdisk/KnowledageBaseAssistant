@@ -16,8 +16,11 @@ from knowledge_system.infrastructure.persistence import (  # noqa: F401
     attempt_models,
     budget_models,
     foundation_models,
+    memory_models,
     model_call_models,
+    observation_models,
     planning_models,
+    runtime_state_models,
     task_models,
 )
 

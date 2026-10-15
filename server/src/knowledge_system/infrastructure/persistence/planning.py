@@ -459,7 +459,18 @@ class PlanTransactionRepository:
         next_sequence = task.last_event_sequence + 1
         for event in write_set.events:
             event.sequence = next_sequence
+            # 任务生命周期事件（PLAN_ACTIVATED，business_ref_type=TASK）与 TASK_CREATED 共享
+            # (task_id, TASK, task_id)，其 business_version 取事件序号以避开 TASK_CREATED 的
+            # business_version=1（与 repositories.add_task_cancellation 同一约定）。
+            if event.business_ref_type == "TASK":
+                event.business_version = event.sequence
             next_sequence += 1
+        # Outbox 的 aggregate_version 同步为同一次业务推进的版本，保持单调。
+        for message in write_set.outbox_messages:
+            for event in write_set.events:
+                if message.event_id == event.id:
+                    message.aggregate_version = event.sequence
+                    break
         if write_set.events:
             self._session.add_all(write_set.events)
             await self._session.flush(write_set.events)

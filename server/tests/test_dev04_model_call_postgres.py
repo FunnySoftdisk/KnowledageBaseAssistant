@@ -221,6 +221,8 @@ def _accepted_call(*, context_pack_id: UUID, model_call_id: UUID | None = None) 
     return ModelCallV1(
         model_call_id=model_call_id or uuid4(),
         context_pack_id=context_pack_id,
+        context_pack_hash="a" * 64,
+        context_pack_input_digest="b" * 64,
         capability_alias="planning_strong",
         approved_model_id="qwen-plus",
         approved_model_revision="rev1",

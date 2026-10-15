@@ -62,21 +62,21 @@ class CoreExportTests(unittest.TestCase):
         self.assertEqual(matrix["decision_status"], "ACCEPTED")
         self.assertEqual(
             matrix["implementation_stage"],
-            "DEV_06_TASK_RESULT_PERSISTENCE",
+            "DEV_04_EGRESS_DEV_06_RUNTIME_DEV_08_MEMORY_DEV_09_INDEX",
         )
         self.assertEqual(matrix["blocked_by"], [])
         self.assertEqual(matrix["orm_mapping_status"], "COMPLETE")
-        self.assertEqual(matrix["migration_pg_status"], "DEV_06_TASK_RESULT_PASS")
-        self.assertEqual(matrix["latest_verification"]["revision"], "0008")
+        self.assertEqual(matrix["migration_pg_status"], "REVISION_0016_PASS")
+        self.assertEqual(matrix["latest_verification"]["revision"], "0016")
         self.assertEqual(matrix["latest_verification"]["alembic_schema_drift"], "NONE")
         self.assertEqual(matrix["latest_verification"]["postgres_integration_tests"], "PASS")
         self.assertEqual(matrix["latest_verification"]["task_result_table_round_trip"], "PASS")
         self.assertEqual(matrix["latest_verification"]["task_result_integration_tests"], "3 passed")
         self.assertEqual(
             matrix["latest_verification"]["full_server_test_suite"],
-            "868 passed; 691 subtests passed",
+            "1332 passed; 134 skipped; 856 subtests passed",
         )
-        self.assertEqual(matrix["latest_verification"]["verified_at"], "2026-10-10")
+        self.assertEqual(matrix["latest_verification"]["verified_at"], "2026-10-16")
         self.assertEqual(matrix["latest_verification"]["field_matrix_column_audit"], "PASS")
         self.assertEqual(matrix["latest_verification"]["legacy_goal_plan_reconciliation"], "PASS")
         self.assertEqual(

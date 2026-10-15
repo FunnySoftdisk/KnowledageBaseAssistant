@@ -313,7 +313,7 @@ class ContextPackRecord(Base):
         PGUUID(as_uuid=True),
         ForeignKey("workflow.task_attempt.id", ondelete="RESTRICT", use_alter=True),
     )
-    conversation_id: Mapped[UUID] = mapped_column(
+    conversation_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("workflow.conversation.id", ondelete="RESTRICT")
     )
     actor_id: Mapped[UUID] = mapped_column(
@@ -335,8 +335,8 @@ class ContextPackRecord(Base):
     tool_schema_versions: Mapped[dict[str, object]] = mapped_column(JSONB)
     output_schema_id: Mapped[str | None] = mapped_column(String(128))
     output_schema_version: Mapped[str | None] = mapped_column(String(64))
-    tokenizer_revision: Mapped[str] = mapped_column(String(128))
-    chat_template_hash: Mapped[str] = mapped_column(CHAR(64))
+    tokenizer_revision: Mapped[str | None] = mapped_column(String(128))
+    chat_template_hash: Mapped[str | None] = mapped_column(CHAR(64))
     max_context: Mapped[int] = mapped_column(Integer)
     reserved_output: Mapped[int] = mapped_column(Integer)
     protocol_overhead: Mapped[int] = mapped_column(Integer)
@@ -372,14 +372,14 @@ class ContextPackItemRecord(Base):
     position: Mapped[int] = mapped_column(Integer)
     item_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True))
     item_type: Mapped[str] = mapped_column(String(64))
-    source_type: Mapped[str] = mapped_column(String(64))
-    source_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True))
-    source_version: Mapped[str] = mapped_column(String(64))
+    source_type: Mapped[str | None] = mapped_column(String(64))
+    source_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True))
+    source_version: Mapped[str | None] = mapped_column(String(64))
     content_hash: Mapped[str] = mapped_column(CHAR(64))
     token_count: Mapped[int] = mapped_column(Integer)
     priority: Mapped[int] = mapped_column(Integer)
-    rank_score: Mapped[float] = mapped_column(Float)
+    rank_score: Mapped[float | None] = mapped_column(Float)
     compression_level: Mapped[int] = mapped_column(Integer)
     selection_reason: Mapped[str] = mapped_column(String(256))
     trust: Mapped[str] = mapped_column(String(24))
-    bucket: Mapped[str] = mapped_column(String(64))
+    bucket: Mapped[str | None] = mapped_column(String(64))

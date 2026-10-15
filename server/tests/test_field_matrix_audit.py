@@ -23,6 +23,7 @@ from knowledge_system.infrastructure.persistence import (  # noqa: F401
     Base,
     attempt_models,
     foundation_models,
+    indexing_models,
     planning_models,
     task_models,
     task_result_models,
@@ -37,6 +38,8 @@ POLYMORPHIC_OR_OPAQUE_UUID_COLUMNS = {
     "integration.idempotency_record.resource_id",
     "integration.outbox_message.aggregate_id",
     "workflow.task_event.business_ref_id",
+    "workflow.task_observation.source_event_id",
+    "workflow.observation_disposition.caused_by_event_id",
     "workflow.context_pack_item.item_id",
     "workflow.context_pack_item.source_id",
     "workflow.task_attempt.temporal_child_run_id",
@@ -79,6 +82,9 @@ CANONICAL_DEFERRED_FOREIGN_KEYS = {
     "workflow.task_result.final_snapshot_id",
     "workflow.task_result.final_attempt_id",
     "workflow.task_result.commit_receipt_id",
+    "memory.memory_record.conflict_group_id",
+    "content.index_build.knowledge_version_id",
+    "content.search_chunk.knowledge_version_id",
 }
 
 

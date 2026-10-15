@@ -13,7 +13,11 @@ import rfc8785
 from pydantic import Field, StringConstraints, TypeAdapter, model_validator
 
 from .core_types import Sha256Hex, StableKey, StrictContractV1
-from .final_synthesis import FinalGapKindV1
+from .final_synthesis import (
+    FinalGapKindV1,
+    FinalSynthesisSnapshotV1,
+    final_synthesis_snapshot_id,
+)
 from .goal_contracts import LocalId
 
 CANDIDATE_MAX_BLOCKS = 64
@@ -147,6 +151,65 @@ class FinalSynthesisCandidateV1(StrictContractV1):
         return self
 
 
+class FinalSynthesisModelOutputV1(StrictContractV1):
+    """模型生成的 Final 候选内容子集；`snapshot_id`/`snapshot_digest` 由装配注入。
+
+    模型不得声明快照身份/摘要，只产出标题、Claim/Section/Gap 草稿、语义 Criterion 评估与
+    选定的结果 Artifact 目录引用；装配端按快照内容寻址派生身份并冻结摘要。
+    """
+
+    contract_version: Literal["final_synthesis_model_output_v1"]
+    title: Annotated[str, StringConstraints(min_length=1, max_length=256)]
+    claims: tuple[FinalClaimDraftV1, ...] = Field(max_length=200)
+    sections: tuple[FinalSectionDraftV1, ...] = Field(max_length=32)
+    semantic_criterion_assessments: tuple[SemanticCriterionAssessmentV1, ...] = Field(max_length=12)
+    gap_reports: tuple[FinalGapReportV1, ...] = Field(max_length=12)
+    selected_result_artifact_catalog_ids: tuple[StableKey, ...] = Field(max_length=50)
+
+    @model_validator(mode="after")
+    def validate_shape(self) -> FinalSynthesisModelOutputV1:
+        if not self.sections and not self.gap_reports:
+            raise ValueError("CANDIDATE_SECTION_OR_GAP_REQUIRED")
+        total_blocks = sum(len(section.blocks) for section in self.sections)
+        if total_blocks > CANDIDATE_MAX_BLOCKS:
+            raise ValueError("CANDIDATE_TOTAL_BLOCK_LIMIT")
+        for label, values in (
+            ("claim", [claim.local_claim_id for claim in self.claims]),
+            ("section", [section.local_section_id for section in self.sections]),
+            ("gap", [gap.local_gap_id for gap in self.gap_reports]),
+            (
+                "criterion_assessment",
+                [assessment.criterion_id for assessment in self.semantic_criterion_assessments],
+            ),
+        ):
+            if len(values) != len(set(values)):
+                raise ValueError(f"CANDIDATE_DUPLICATE_{label.upper()}_ID")
+        return self
+
+
+def assemble_final_candidate(
+    output: FinalSynthesisModelOutputV1, snapshot: FinalSynthesisSnapshotV1
+) -> FinalSynthesisCandidateV1:
+    """把候选内容子集装配为完整 `FinalSynthesisCandidateV1`，注入快照身份与摘要。"""
+
+    return FinalSynthesisCandidateV1(
+        contract_version="final_synthesis_v1",
+        snapshot_id=final_synthesis_snapshot_id(
+            task_id=snapshot.task_id,
+            runtime_decision_id=snapshot.runtime_decision_id,
+            snapshot_digest=snapshot.snapshot_digest,
+            builder_profile=snapshot.builder_profile,
+        ),
+        snapshot_digest=snapshot.snapshot_digest,
+        title=output.title,
+        claims=output.claims,
+        sections=output.sections,
+        semantic_criterion_assessments=output.semantic_criterion_assessments,
+        gap_reports=output.gap_reports,
+        selected_result_artifact_catalog_ids=output.selected_result_artifact_catalog_ids,
+    )
+
+
 def candidate_canonical_bytes(candidate: FinalSynthesisCandidateV1) -> int:
     return len(rfc8785.dumps(candidate.model_dump(mode="json")))
 
@@ -172,9 +235,11 @@ __all__ = [
     "FinalParagraphBlockV1",
     "FinalSectionDraftV1",
     "FinalSynthesisCandidateV1",
+    "FinalSynthesisModelOutputV1",
     "FinalTableBlockV1",
     "SemanticCriterionAssessmentKindV1",
     "SemanticCriterionAssessmentV1",
+    "assemble_final_candidate",
     "candidate_canonical_bytes",
     "validate_candidate_size",
 ]

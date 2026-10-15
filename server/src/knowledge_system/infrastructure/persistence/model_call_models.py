@@ -80,6 +80,11 @@ class ModelCallRecord(Base):
             name="digests_lower_hex",
         ),
         CheckConstraint(
+            "context_pack_hash ~ '^[0-9a-f]{64}$' AND "
+            "context_pack_input_digest ~ '^[0-9a-f]{64}$'",
+            name="context_pack_ref_lower_hex",
+        ),
+        CheckConstraint(
             "conversation_memory_version >= 0 AND user_private_memory_version >= 0 AND "
             "task_memory_version >= 0",
             name="memory_versions_nonnegative",
@@ -137,6 +142,8 @@ class ModelCallRecord(Base):
     context_pack_id: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True), ForeignKey("workflow.context_pack.id", ondelete="RESTRICT")
     )
+    context_pack_hash: Mapped[str] = mapped_column(CHAR(64))
+    context_pack_input_digest: Mapped[str] = mapped_column(CHAR(64))
     context_policy_version: Mapped[str] = mapped_column(String(64))
     authorization_version: Mapped[int] = mapped_column(BigInteger)
     grant_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True))

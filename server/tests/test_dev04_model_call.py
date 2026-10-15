@@ -69,6 +69,8 @@ def make_call(*, token_accounting=None, usage=None, status=ModelCallState.ACCEPT
         approved_model_revision="rev1",
         prompt_version="v1",
         context_pack_id=uuid4(),
+        context_pack_hash="a" * 64,
+        context_pack_input_digest="b" * 64,
         context_policy_version="cp-v1",
         authorization_version=3,
         runtime_version="rt-1",

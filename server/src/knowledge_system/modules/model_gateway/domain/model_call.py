@@ -57,6 +57,8 @@ class ModelCallV1(BaseModel):
     prompt_version: str = Field(min_length=1)
     tool_schema_versions: dict[str, str] = Field(default_factory=dict)
     context_pack_id: UUID
+    context_pack_hash: Sha256
+    context_pack_input_digest: Sha256
     context_policy_version: str = Field(min_length=1)
     authorization_version: int
     grant_id: UUID | None = None

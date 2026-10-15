@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from typing import Protocol
 
+from ..domain.chat_request import BifrostChatRequestV1
 from ..domain.stream_event import BifrostEventV1
 
 
@@ -22,12 +23,13 @@ class BifrostStreamPort(Protocol):
     业务事实；Bifrost中断或统计缺失不得直接修改ModelCall终态。
     """
 
-    async def stream(
+    def stream(
         self,
         *,
         model_call_id: str,
         trace_id: str,
         route_ref: str,
+        request: BifrostChatRequestV1,
     ) -> AsyncIterator[BifrostEventV1]: ...
 
 

@@ -54,6 +54,9 @@ from .input_contracts import OutputContractV1
 TASK_RESULT_ARTIFACT_NAMESPACE = uuid5(
     NAMESPACE_URL, "urn:knowledge-system:task-result-artifact:v1"
 )
+TASK_RESULT_COMMIT_RECEIPT_NAMESPACE = uuid5(
+    NAMESPACE_URL, "urn:knowledge-system:task-result-commit-receipt:v1"
+)
 ENVELOPE_MAX_BYTES = 2_097_152  # 2 MiB
 
 
@@ -172,6 +175,13 @@ def task_result_artifact_id(
 
     name = f"{str(task_id).lower()}:{plan_version}:{kind}:{sha256}"
     return uuid5(TASK_RESULT_ARTIFACT_NAMESPACE, name)
+
+
+def commit_receipt_id(receipt: TaskResultCommitReceiptV1) -> UUID:
+    """同一 (task, plan_version, receipt_digest) 派生同一提交收据 ID。"""
+
+    name = f"{str(receipt.task_id).lower()}:{receipt.plan_version}:{receipt.receipt_digest}"
+    return uuid5(TASK_RESULT_COMMIT_RECEIPT_NAMESPACE, name)
 
 
 def freeze_task_result(result: TaskResultV1) -> TaskResultV1:
@@ -464,6 +474,7 @@ def build_commit_receipt(
 __all__ = [
     "ENVELOPE_MAX_BYTES",
     "TASK_RESULT_ARTIFACT_NAMESPACE",
+    "TASK_RESULT_COMMIT_RECEIPT_NAMESPACE",
     "ResultArtifactEntryV1",
     "ResultCriterionCheckV1",
     "ResultDegradationFlagV1",
@@ -473,6 +484,7 @@ __all__ = [
     "TaskResultV1",
     "assemble_task_result",
     "build_commit_receipt",
+    "commit_receipt_id",
     "compute_commit_digest",
     "freeze_assembly",
     "freeze_envelope",
